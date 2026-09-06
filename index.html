@@ -368,6 +368,110 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 .modal-capsule:not(.minimized) #closeModal{
   display:grid!important;
 }
+
+/* === Chapter 03: PDF Reader === */
+.pdf-reader-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:0 0 18px}
+.pdf-reader-note{font-size:.62rem;color:var(--muted);font-weight:600;line-height:1.5}
+.pdf-reader-empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px;background:var(--surface-solid)}
+.pdf-card{cursor:pointer;appearance:none;width:100%;text-align:left}
+.pdf-card .pdf-meta{font-size:.62rem;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-card .open{cursor:pointer}
+.pdf-reader-hidden-input{display:none!important}
+.pdf-viewer-tools{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;padding:7px 10px;background:rgba(253,249,238,.92);border:1px solid rgba(227,195,119,.55);border-radius:999px;box-shadow:0 10px 30px rgba(90,64,20,.14)}
+.pdf-viewer-tools .icon-btn{width:34px;height:34px}
+.pdf-mode-label{font-size:.66rem;font-weight:800;color:var(--gold-deep);padding:0 5px;white-space:nowrap}
+.pdf-book-stage{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:8px 10px 8px;background:radial-gradient(circle at 50% 40%,#f7edd5 0%,#ead9b8 48%,#d7c098 100%);overflow:hidden}
+.pdf-book-stage.active{display:flex}
+.pdf-book{position:relative;width:min(96vw,1220px);height:min(91vh,900px);perspective:2400px;display:flex;align-items:stretch;justify-content:center;touch-action:none;user-select:none;transform:none!important}
+.pdf-book::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:linear-gradient(180deg,transparent,rgba(100,70,30,.28),transparent);z-index:8;pointer-events:none}
+.pdf-page{position:relative;width:50%;height:100%;background:#fffdf7;box-shadow:0 18px 50px rgba(65,45,18,.28);overflow:hidden;backface-visibility:hidden;transform-style:preserve-3d;transform:none;transition:none}
+.pdf-page.pdf-under-turn{z-index:3}
+.pdf-page.pdf-static{z-index:4}
+.pdf-turn-layer{position:absolute;top:0;width:50%;height:100%;z-index:15;background:#fffdf7;overflow:hidden;transform-style:preserve-3d;will-change:transform;box-shadow:0 18px 50px rgba(65,45,18,.28);pointer-events:none}
+.pdf-turn-layer.forward{left:50%;transform-origin:left center;border-radius:2px 10px 10px 2px}
+.pdf-turn-layer.back{left:0;transform-origin:right center;border-radius:10px 2px 2px 10px}
+.pdf-turn-face{position:absolute;inset:0;width:100%;height:100%;display:block;background-color:#fffdf7;background-position:center;background-repeat:no-repeat;background-size:contain;backface-visibility:hidden;-webkit-backface-visibility:hidden}.pdf-turn-face.back{transform:rotateY(180deg)}
+.pdf-turn-layer::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(80,50,20,.16),transparent 16%,transparent 78%,rgba(80,50,20,.08));pointer-events:none}
+.pdf-book.is-dragging .pdf-page{transition:none!important}
+.pdf-page.turn-forward,.pdf-page.turn-back{animation:none!important;transform:none!important}
+@media (prefers-reduced-motion:reduce){.pdf-turn-layer{transition:none!important}}
+.pdf-page canvas{display:block;width:100%;height:100%;object-fit:contain;background:#fffdf7}
+.pdf-page.left{border-radius:10px 2px 2px 10px}
+.pdf-page.right{border-radius:2px 10px 10px 2px}
+.pdf-page.left::after,.pdf-page.right::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(90,55,18,.10),transparent 10%,transparent 88%,rgba(90,55,18,.08));mix-blend-mode:multiply}
+.pdf-page.turn-forward{transform-origin:left center;animation:pdfTurnForward .72s cubic-bezier(.2,.72,.15,1) both;z-index:12}
+.pdf-page.turn-back{transform-origin:right center;animation:pdfTurnBack .72s cubic-bezier(.2,.72,.15,1) both;z-index:12}
+@keyframes pdfTurnForward{0%{transform:rotateY(0deg);filter:brightness(1)}45%{filter:brightness(.88)}100%{transform:rotateY(-180deg);filter:brightness(.98)}}
+@keyframes pdfTurnBack{0%{transform:rotateY(0deg);filter:brightness(1)}45%{filter:brightness(.88)}100%{transform:rotateY(180deg);filter:brightness(.98)}}
+.pdf-book-caption{pointer-events:none;position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font-size:.62rem;font-weight:700;color:var(--gold-deep);background:rgba(253,249,238,.86);padding:6px 12px;border-radius:999px;border:1px solid var(--line);z-index:20;white-space:nowrap}
+.pdf-book-hint{position:absolute;top:58px;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--muted);font-weight:700;background:rgba(253,249,238,.82);padding:6px 10px;border-radius:999px;z-index:20}
+.pdf-reader-modal-tools{position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:8;display:none}
+.modal.pdf-mode .pdf-reader-modal-tools{display:flex}
+.modal.pdf-mode #frame{display:none!important}
+.modal.pdf-mode.book-active #frame{display:none}
+.modal.pdf-mode.book-active .modal-frame-wrap{
+  inset:10px!important;width:auto!important;height:auto!important;
+  background-color:var(--cream)!important;
+  background-image:var(--corner-img),var(--corner-img),var(--corner-img),var(--corner-img)!important;
+  background-repeat:no-repeat!important;background-size:42px 42px!important;
+  background-position:top left,top right,bottom left,bottom right!important;
+  border:2px solid rgba(179,129,44,.52)!important;border-radius:4px!important;
+  box-shadow:inset 0 0 0 1px rgba(227,195,119,.22),0 10px 34px rgba(0,0,0,.22)!important;
+  padding:8px!important;overflow:hidden!important
+}
+.modal.pdf-mode.book-active .pdf-book-stage{
+  inset:0!important;padding:4px!important;
+  background:radial-gradient(circle at 50% 42%,#f7edd5 0%,#ead9b8 50%,#d7c098 100%)!important;
+}
+.modal.pdf-mode.book-active .pdf-book{width:min(96vw,1220px);height:min(94vh,900px)}
+.modal.pdf-mode.book-active .module-frame-overlay{display:block;opacity:.72;pointer-events:none}
+@media(max-width:760px){
+  .pdf-book-stage{padding:70px 10px 18px}
+  .pdf-book{height:min(72vh,680px);width:98vw}
+  .pdf-page{box-shadow:0 10px 30px rgba(65,45,18,.22)}
+  .pdf-book::before{display:none}
+  .pdf-page.left{width:100%;border-radius:8px}
+  .pdf-page.right{display:none}
+  .pdf-book-caption{bottom:2px}
+  .pdf-book-hint{top:45px}
+}
+@media(prefers-reduced-motion:reduce){.pdf-page.turn-forward,.pdf-page.turn-back{animation:none}}
+
+
+/* PDF scroll viewer: fullscreen, native-browser-toolbar-free */
+.pdf-scroll-stage{position:absolute;inset:0;display:none;overflow:auto;background:#ececec;padding:10px 10px 24px;overscroll-behavior:contain}
+.pdf-scroll-stage.active{display:block}
+.pdf-scroll-pages{width:min(100%,980px);margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:18px}
+.pdf-scroll-page-wrap{position:relative;display:block;max-width:100%;min-width:220px;background:#fff;box-shadow:0 8px 28px rgba(0,0,0,.28);border-radius:2px;overflow:hidden}.pdf-scroll-page{display:block;width:100%;height:100%;background:#fff}
+.modal.pdf-mode.scroll-active #frame{display:none}
+.modal.pdf-mode.scroll-active .pdf-book-stage{display:none}
+.modal.pdf-mode.scroll-active .pdf-scroll-stage{display:block}.modal.pdf-mode.scroll-active .modal-capsule-wrap{top:8px}.modal.pdf-mode.scroll-active .pdf-reader-modal-tools{display:flex!important}
+
+/* PDF reader: immersive fullscreen + floating auto-hide header */
+.modal.pdf-mode{background:#000}
+.modal.pdf-mode .modal-frame-wrap{position:absolute;inset:0;width:100%;height:100%;max-width:none;margin:0;border-radius:0;border:0;box-shadow:none;padding:0;background:#111}
+.modal.pdf-mode #frame{width:100%;height:100%;border:0;display:block}
+.modal.pdf-mode .modal-capsule-wrap{top:12px;z-index:30;pointer-events:none;transition:opacity .45s ease,transform .45s ease}
+.modal.pdf-mode .modal-capsule{pointer-events:auto;width:auto;max-width:min(94vw,900px);background:rgba(20,20,20,.24);border-color:rgba(255,255,255,.16);box-shadow:0 8px 30px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.12);color:#fff;backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%)}
+.modal.pdf-mode.pdf-header-hidden .modal-capsule-wrap{opacity:0;transform:translateY(-18px);pointer-events:none}
+/* PDF header: compact floating glass pill; title/extra controls are intentionally hidden */
+.modal.pdf-mode .modal-capsule{width:auto!important;max-width:none!important;min-height:0;padding:5px 7px 5px 9px!important;gap:6px!important;background:rgba(18,18,18,.22)!important;border-color:rgba(255,255,255,.12)!important;box-shadow:0 6px 24px rgba(0,0,0,.14)!important}
+.modal.pdf-mode .modal-capsule-left{display:none!important}
+.modal.pdf-mode .modal-actions{gap:5px!important}
+.modal.pdf-mode #miniModal,.modal.pdf-mode #fsBtnModal,.modal.pdf-mode #newTab{display:grid!important}
+.modal.pdf-mode .pdf-reader-modal-tools{position:static;transform:none;display:flex!important;gap:4px;padding:0;background:transparent;border:0;box-shadow:none}
+.modal.pdf-mode .pdf-mode-label{display:none!important}
+.modal.pdf-mode .pdf-reader-modal-tools .icon-btn,.modal.pdf-mode #closeModal{width:30px;height:30px;border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.10);color:#fff;box-shadow:none}
+.modal.pdf-mode.scroll-active .modal-capsule{opacity:.78}
+.modal.pdf-mode.scroll-active .pdf-reader-modal-tools{display:flex!important}
+.modal.pdf-mode.scroll-active .pdf-scroll-stage{scrollbar-width:thin}
+
+.modal.pdf-mode.book-active .modal-frame-wrap{background:transparent}
+.modal.pdf-mode.book-active .pdf-book-stage{padding:8px;inset:0}
+.pdf-book{touch-action:none;overscroll-behavior:contain}
+.pdf-book-hint{transition:opacity .35s ease}
+.pdf-book.is-dragging .pdf-book-hint{opacity:0}
+@media(max-width:760px){.modal.pdf-mode .modal-capsule-wrap{top:8px;padding:0 8px}.modal.pdf-mode .modal-capsule{padding:5px 6px 5px 10px}.modal.pdf-mode.book-active .modal-frame-wrap{inset:5px!important;padding:4px!important;border-radius:4px!important;background-size:32px 32px!important}.modal.pdf-mode.book-active .pdf-book-stage{padding:2px}.modal.pdf-mode.book-active .pdf-book{width:100%;height:100%;max-height:none}}
 </style>
 </head>
 <body>
@@ -397,7 +501,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
         <span><strong>VAOZEE // KITAB</strong><small>Pesantren Digital</small></span>
       </a>
       <nav class="nav-links">
-        <a href="#kitab">Kitab Klasik</a><a href="#umum">Umum &amp; Hiburan</a>
+        <a href="#kitab">Kitab Klasik</a><a href="#umum">Umum &amp; Hiburan</a><a href="#pdf-reader">Pembaca PDF</a>
       </nav>
       <div class="status"><span class="dot"></span><span id="clock">--:--:--</span></div>
       <button class="icon-btn fs-btn" id="fsBtnMain" title="Layar penuh">⛶</button>
@@ -408,6 +512,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
   <div class="nav-drop" id="navDrop">
     <a href="#kitab">Kitab Klasik</a>
     <a href="#umum">Umum &amp; Hiburan</a>
+    <a href="#pdf-reader">Pembaca PDF</a>
   </div>
 </div>
 
@@ -448,6 +553,22 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
   <div class="grid" id="umumGrid"></div>
 </section>
 
+
+
+<section class="section" id="pdf-reader" data-reveal>
+  <div class="section-head"><div><div class="kicker">03 // Perpustakaan</div><h2>Pembaca PDF</h2></div><p>Folder Perangkat · Folder Sharing · Mode Buku</p></div>
+  <div class="pdf-reader-actions">
+    <button class="btn primary" type="button" id="pdfPickFiles">＋ Tambah PDF</button>
+    <button class="btn" type="button" id="pdfPickFolder">▣ Buka Folder</button>
+    <input class="pdf-reader-hidden-input" id="pdfFilesInput" type="file" accept="application/pdf,.pdf" multiple>
+    <input class="pdf-reader-hidden-input" id="pdfFolderInput" type="file" accept="application/pdf,.pdf" webkitdirectory directory multiple>
+    <span class="pdf-reader-note">Pilih beberapa PDF sekaligus atau satu folder. Folder sharing yang bisa dipilih browser akan tampil sebagai daftar judul PDF.</span>
+  </div>
+  <div class="grid" id="pdfGrid"></div>
+  <div class="pdf-reader-empty" id="pdfEmpty">Belum ada PDF. Tambahkan file PDF atau pilih folder perangkat untuk memulai.</div>
+</section>
+
+<div class="divider"><span class="dline"></span><span class="gem"></span><span class="dline"></span></div>
 <footer class="footer">
   <div><strong>© 2026 by Achmad Fauzi</strong> · <a href="mailto:vaozeei@gmail.com">vaozeei@gmail.com</a></div>
   <div>VAOZEE // DIGITAL PESANTREN INDEX</div>
@@ -499,11 +620,25 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
     <div class="mf-corner tl"></div><div class="mf-corner tr"></div>
     <div class="mf-corner bl"></div><div class="mf-corner br"></div>
   </div>
-  <iframe id="frame" title="Modul VAOZEE"></iframe>
+  <iframe id="frame" title="Modul VAOZEE" referrerpolicy="no-referrer"></iframe>
+  <div class="pdf-scroll-stage" id="pdfScrollStage" aria-hidden="true"><div class="pdf-scroll-pages" id="pdfScrollPages"></div></div>
+  <div class="pdf-book-stage" id="pdfBookStage" aria-hidden="true">
+    <div class="pdf-book-hint">Geser halaman dengan jari untuk membalik buku</div>
+    <div class="pdf-book" id="pdfBook">
+      <div class="pdf-page left" id="pdfPageLeft"><canvas id="pdfCanvasLeft"></canvas></div>
+      <div class="pdf-page right" id="pdfPageRight"><canvas id="pdfCanvasRight"></canvas></div>
+      <div class="pdf-book-caption" id="pdfBookCaption">Halaman 1–2</div>
+    </div>
+  </div>
 </div>
   <div class="modal-capsule-wrap">
     <div class="modal-capsule">
       <div class="modal-capsule-left"><span class="dot"></span><div class="modal-title" id="modalTitle">Modul</div></div>
+      <div class="pdf-reader-modal-tools" id="pdfReaderTools">
+        <span class="pdf-mode-label" id="pdfModeLabel">Baca PDF</span>
+        <button class="icon-btn" id="pdfScrollMode" title="Mode scroll biasa">↕</button>
+        <button class="icon-btn" id="pdfBookMode" title="Mode buku halaman per halaman">▤</button>
+      </div>
       <div class="modal-actions">
         <button class="icon-btn header-mini-btn" id="miniModal" title="Minimalkan header modul" aria-label="Minimalkan header modul">−</button>
         <button class="icon-btn fs-btn" id="fsBtnModal" title="Layar penuh">⛶</button>
@@ -605,7 +740,7 @@ function card(x,dispN){
    <div class="card-top"><span class="num">MODUL ${shown}</span><span class="badge">${x.badge}</span></div>
    <div class="icon">${x.icon}</div>
    <div class="card-body"><h3>${x.title}</h3><p>${x.desc}</p></div>
-   <div class="card-bottom"><span class="path">${online?(new URL(online).pathname.replaceAll('/','')||'/'):local}</span><span class="open">Buka →</span></div>
+   <div class="card-bottom"><span class="path">${online?(new URL(online).pathname.replaceAll('/','')||'/'):local}</span><span class="open">${online&&local?'Online / Offline →':'Buka →'}</span></div>
  </a>`;
 }
 document.getElementById('kitabGrid').innerHTML=kitab.map(card).join('');
@@ -622,7 +757,7 @@ updateModuleCounters();
 /* ---- fullscreen module viewer ---- */
 const modal=document.getElementById('modal'), frame=document.getElementById('frame'), modalTitle=document.getElementById('modalTitle'), newTab=document.getElementById('newTab'), loader=document.getElementById('loader');
 function openModule(url,title,fromHistory=false,localUrl=''){
- const onlineUrl=validUrl(url);
+ const onlineUrl=dashboardValidUrl(url);
  const offlineUrl=localUrl||'';
  loader.classList.remove('done');
 
@@ -666,16 +801,11 @@ function openModule(url,title,fromHistory=false,localUrl=''){
  /* Tidak ada file offline sama sekali (belum ada di folder) -> langsung pakai online. */
  if(!offlineUrl){show(onlineUrl,true);return}
 
- /* Nama modul yang sama tersedia di dua-duanya: cek dulu apakah internet benar-benar
-    tersambung ke sumber online sebelum menampilkannya, supaya jika benar-benar offline
-    kita tidak perlu menunggu -- versi online (paling update) dipakai HANYA jika benar-benar
-    bisa dijangkau saat ini, kalau tidak otomatis jatuh ke file offline di folder yang sama. */
+ /* Bila kedua sumber tersedia, online diprioritaskan. Jika browser menolak iframe
+    atau koneksi sedang mati, fallback lokal tetap tersedia. Tombol ↗ di header viewer
+    menjadi jalur langsung untuk situs yang memang melarang embedding iframe. */
  if(navigator.onLine===false){show(offlineUrl,false);return}
- const probe=new AbortController();
- const probeTimer=setTimeout(()=>probe.abort(),1800);
- fetch(onlineUrl,{mode:'no-cors',cache:'no-store',signal:probe.signal})
-   .then(()=>{clearTimeout(probeTimer);show(onlineUrl,true)})
-   .catch(()=>{clearTimeout(probeTimer);show(offlineUrl,false)});
+ show(onlineUrl,true);
 }
 
 function closeModule(fromPopState=false){
@@ -1118,8 +1248,10 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
   form.addEventListener('submit',async e=>{
     e.preventDefault();
     const title=document.getElementById('moduleTitle').value.trim();
-    const url=validUrl(document.getElementById('moduleUrl').value.trim());
-    if(!title||!url){alert('URL harus berupa alamat http/https yang valid.');return}
+    const rawUrl=document.getElementById('moduleUrl').value.trim();
+    const url=validUrl(rawUrl);
+    const localUrl=document.getElementById('moduleLocalUrl').value.trim();
+    if(!title||(!url&&!localUrl)){alert('Isi URL online yang valid atau File Offline yang valid.');return}
 
     let editTarget=null;
     try{editTarget=editTargetInput.value?JSON.parse(editTargetInput.value):null}catch(e){editTarget=null}
@@ -1130,7 +1262,7 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
 
     const section=sectionSelect.value;
     const payload={
-      action:isEdit?'edit':'add',token:getPassword(),section,title,url,localUrl:document.getElementById('moduleLocalUrl').value.trim(),
+      action:isEdit?'edit':'add',token:getPassword(),section,title,url,localUrl:localUrl,
       cat:document.getElementById('moduleCat').value,
       icon:document.getElementById('moduleIcon').value.trim()||(section==='umum'?'✦':'كتاب'),
       badge:document.getElementById('moduleBadge').value.trim()||(section==='umum'?'UMUM':'KITAB'),
@@ -1178,8 +1310,8 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
 (function(){
   const KEY='vaozee_compact_view';
   const btn=document.getElementById('compactToggle');
-  const grids=[document.getElementById('kitabGrid'),document.getElementById('umumGrid')];
-  if(!btn||!grids[0]||!grids[1])return;
+  const grids=[document.getElementById('kitabGrid'),document.getElementById('umumGrid'),document.getElementById('pdfGrid')].filter(Boolean);
+  if(!btn||grids.length<2)return;
   function apply(on){
     grids.forEach(g=>g.classList.toggle('compact',on));
     btn.textContent=on?'▦ Tampilan Lengkap':'🗜 Ringkas Tampilan';
@@ -1191,6 +1323,349 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
     localStorage.setItem(KEY,on?'1':'0');
     apply(on);
   });
+})();
+</script>
+
+
+<script>
+/* === Chapter 03: VAOZEE PDF Reader === */
+(function(){
+  const grid=document.getElementById('pdfGrid'), empty=document.getElementById('pdfEmpty');
+  const filesInput=document.getElementById('pdfFilesInput'), folderInput=document.getElementById('pdfFolderInput');
+  const pickFiles=document.getElementById('pdfPickFiles'), pickFolder=document.getElementById('pdfPickFolder');
+  const modal=document.getElementById('modal'), frame=document.getElementById('frame'), titleEl=document.getElementById('modalTitle');
+  const stage=document.getElementById('pdfBookStage'), canvasL=document.getElementById('pdfCanvasLeft'), canvasR=document.getElementById('pdfCanvasRight');
+  const pageL=document.getElementById('pdfPageLeft'), pageR=document.getElementById('pdfPageRight'), caption=document.getElementById('pdfBookCaption');
+  const scrollBtn=document.getElementById('pdfScrollMode'), bookBtn=document.getElementById('pdfBookMode'), label=document.getElementById('pdfModeLabel');
+  if(!grid||!empty||!modal)return;
+
+  const STORAGE='vaozee_pdf_reader_v1';
+  let pdfEntries=[];
+  let activePdf=null, activeDoc=null, activeSpread=1, pdfLibPromise=null;
+
+  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function updateEmpty(){empty.style.display=pdfEntries.length?'none':'block'}
+  function saveMeta(){try{localStorage.setItem(STORAGE,JSON.stringify(pdfEntries.map(x=>({id:x.id,name:x.name,path:x.path||''}))))}catch(e){}}
+  function idFor(file){return (file.webkitRelativePath||file.name)+'|'+file.size+'|'+file.lastModified}
+
+  function addFiles(list){
+    const incoming=[...list].filter(f=>f && (f.type==='application/pdf'||/\.pdf$/i.test(f.name)));
+    incoming.forEach(file=>{
+      const id=idFor(file);
+      if(pdfEntries.some(x=>x.id===id))return;
+      pdfEntries.push({id,name:file.name,path:file.webkitRelativePath||file.name,file});
+    });
+    pdfEntries.sort((a,b)=>a.name.localeCompare(b.name,'id'));
+    renderCards();saveMeta();
+  }
+
+  function renderCards(){
+    grid.innerHTML=pdfEntries.map((x,i)=>`<button class="card pdf-card" type="button" data-pdf-id="${esc(x.id)}">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="card-top"><span class="num">PDF ${String(i+1).padStart(2,'0')}</span><span class="badge">PDF</span></div>
+      <div class="icon">PDF</div>
+      <div class="card-body"><h3>${esc(x.name.replace(/\.pdf$/i,''))}</h3><p>Pembaca PDF VAOZEE dengan mode scroll biasa atau mode buku halaman per halaman.</p><div class="pdf-meta">${esc(x.path||x.name)}</div></div>
+      <div class="card-bottom"><span class="path">${esc(x.name)}</span><span class="open">Buka PDF →</span></div>
+    </button>`).join('');
+    grid.querySelectorAll('.pdf-card').forEach(btn=>btn.addEventListener('click',()=>{
+      const x=pdfEntries.find(y=>y.id===btn.dataset.pdfId); if(x)openPdf(x);
+    }));
+    updateEmpty();
+  }
+
+  pickFiles&&pickFiles.addEventListener('click',()=>filesInput.click());
+  pickFolder&&pickFolder.addEventListener('click',async()=>{
+    if(window.showDirectoryPicker){
+      try{
+        const dir=await window.showDirectoryPicker({mode:'read'}), arr=[];
+        async function walk(handle,path=''){
+          for await(const [name,entry] of handle.entries()){
+            if(entry.kind==='file' && /\.pdf$/i.test(name)){
+              const f=await entry.getFile(); Object.defineProperty(f,'webkitRelativePath',{value:path+name}); arr.push(f);
+            }else if(entry.kind==='directory') await walk(entry,path+name+'/');
+          }
+        }
+        await walk(dir); addFiles(arr); return;
+      }catch(e){if(e.name==='AbortError')return}
+    }
+    folderInput.click();
+  });
+  filesInput&&filesInput.addEventListener('change',()=>{addFiles(filesInput.files);filesInput.value=''});
+  folderInput&&folderInput.addEventListener('change',()=>{addFiles(folderInput.files);folderInput.value=''});
+
+  let pdfHeaderTimer=null;
+  function schedulePdfHeaderHide(){
+    clearTimeout(pdfHeaderTimer);
+    if(!modal.classList.contains('pdf-mode'))return;
+    pdfHeaderTimer=setTimeout(()=>modal.classList.add('pdf-header-hidden'),2600);
+  }
+  function revealPdfHeader(){
+    if(!modal.classList.contains('pdf-mode'))return;
+    modal.classList.remove('pdf-header-hidden');
+    schedulePdfHeaderHide();
+  }
+  modal.addEventListener('pointermove',e=>{if(e.clientY<90)revealPdfHeader(); else if(modal.classList.contains('pdf-header-hidden')===false)schedulePdfHeaderHide()},{passive:true});
+  modal.addEventListener('pointerdown',e=>{if(e.clientY<90)revealPdfHeader()},{passive:true});
+  modal.addEventListener('touchstart',revealPdfHeader,{passive:true});
+
+  function openPdf(x){
+    activePdf=x; activeSpread=1; activeDoc=null;
+    const url=URL.createObjectURL(x.file);
+    frame.dataset.pdfBlob=url; frame.src='about:blank';
+    titleEl.textContent=x.name.replace(/\.pdf$/i,'');
+    modal.classList.add('open','pdf-mode'); modal.classList.remove('book-active','pdf-header-hidden'); modal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
+    stage.classList.remove('active'); stage.setAttribute('aria-hidden','true');
+    // Masuk fullscreen langsung dari gesture klik kartu PDF, seperti iframe viewer.
+    const fsTarget=modal;
+    if(!document.fullscreenElement && fsTarget.requestFullscreen){fsTarget.requestFullscreen().catch(()=>{});}
+    schedulePdfHeaderHide();
+    label.textContent='Baca PDF · '+x.name.replace(/\.pdf$/i,'');
+    activateScroll();
+    if(!history.state||!history.state.vaozeePdf)history.pushState({vaozeePdf:true,title:x.name},'',location.href.split('#')[0]+'#pdf');
+  }
+
+  function closePdfCleanup(){
+    if(!modal.classList.contains('pdf-mode'))return;
+    modal.classList.remove('pdf-mode','book-active','scroll-active'); stage.classList.remove('active'); document.getElementById('pdfScrollStage')?.classList.remove('active'); document.getElementById('pdfScrollPages').innerHTML='';
+    if(frame.dataset.pdfBlob){URL.revokeObjectURL(frame.dataset.pdfBlob);delete frame.dataset.pdfBlob}
+    activePdf=null;activeDoc=null;frame.src='about:blank';
+    modal.classList.remove('pdf-header-hidden');
+    if(document.fullscreenElement && document.exitFullscreen){document.exitFullscreen().catch(()=>{});}
+  }
+
+  function loadPdfJs(){
+    if(window.pdfjsLib)return Promise.resolve(window.pdfjsLib);
+    if(pdfLibPromise)return pdfLibPromise;
+    pdfLibPromise=new Promise((resolve,reject)=>{
+      const sc=document.createElement('script');
+      sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; sc.async=true;
+      sc.onload=()=>{if(!window.pdfjsLib){reject(new Error('PDF.js tidak tersedia'));return} window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';resolve(window.pdfjsLib)};
+      sc.onerror=()=>reject(new Error('Gagal memuat PDF.js. Mode buku membutuhkan koneksi internet sekali untuk library pembaca.'));
+      document.head.appendChild(sc);
+    });
+    return pdfLibPromise;
+  }
+
+  async function renderPage(page,canvas){
+    const wrap=canvas.parentElement, rect=wrap.getBoundingClientRect();
+    const base=page.getViewport({scale:1});
+    const scale=Math.min((Math.max(120,rect.width)-8)/base.width,(Math.max(120,rect.height)-8)/base.height);
+    const vp=page.getViewport({scale:Math.max(.25,scale*window.devicePixelRatio)});
+    canvas.width=Math.floor(vp.width);canvas.height=Math.floor(vp.height);canvas.style.width='100%';canvas.style.height='100%';
+    await page.render({canvasContext:canvas.getContext('2d',{alpha:false}),viewport:vp}).promise;
+  }
+
+  async function renderScrollPage(pageNum){
+    const wrap=document.createElement('div'); wrap.className='pdf-scroll-page-wrap'; wrap.dataset.page=pageNum;
+    const canvas=document.createElement('canvas'); canvas.className='pdf-scroll-page'; wrap.appendChild(canvas);
+    return wrap;
+  }
+
+  let scrollObserver=null, scrollRenderBusy=new Set();
+  async function renderOneScrollPage(wrap){
+    if(!activeDoc||!wrap||wrap.dataset.rendered==='1'||scrollRenderBusy.has(wrap.dataset.page))return;
+    scrollRenderBusy.add(wrap.dataset.page);
+    try{
+      const page=await activeDoc.getPage(Number(wrap.dataset.page));
+      const c=wrap.querySelector('canvas');
+      const base=page.getViewport({scale:1});
+      const maxW=Math.min(window.innerWidth-36,980);
+      const scale=maxW/base.width;
+      wrap.style.width=Math.min(maxW,base.width*scale)+'px';
+      wrap.style.aspectRatio=base.width+'/'+base.height;
+      const vp=page.getViewport({scale:Math.max(.45,scale*window.devicePixelRatio)});
+      c.width=Math.floor(vp.width); c.height=Math.floor(vp.height); c.style.width='100%'; c.style.height='100%';
+      await page.render({canvasContext:c.getContext('2d',{alpha:false}),viewport:vp}).promise;
+      wrap.dataset.rendered='1';
+    }finally{scrollRenderBusy.delete(wrap.dataset.page)}
+  }
+
+  async function renderScrollDoc(doc){
+    const wrap=document.getElementById('pdfScrollPages'); if(!wrap)return;
+    if(scrollObserver)scrollObserver.disconnect();
+    wrap.innerHTML='';
+    for(let i=1;i<=doc.numPages;i++)wrap.appendChild(await renderScrollPage(i));
+    scrollObserver=new IntersectionObserver(entries=>{
+      entries.filter(e=>e.isIntersecting).forEach(e=>renderOneScrollPage(e.target));
+    },{root:document.getElementById('pdfScrollStage'),rootMargin:'900px 0px'});
+    wrap.querySelectorAll('.pdf-scroll-page-wrap').forEach(el=>scrollObserver.observe(el));
+  }
+
+  function canvasToDataURL(canvas){
+    try{return canvas.toDataURL('image/jpeg',.94)}catch(e){return ''}
+  }
+
+  function removeTurnLayer(){
+    const el=document.getElementById('pdfTurnLayer');
+    if(el)el.remove();
+    document.getElementById('pdfBook')?.classList.remove('is-dragging');
+  }
+
+  async function showSpread(spread,dir){
+    if(!activeDoc)return;
+    const total=activeDoc.numPages, maxStart=total%2?Math.max(1,total):Math.max(1,total-1);
+    spread=Math.max(1,Math.min(maxStart,spread));
+    if(spread%2===0)spread--;
+    removeTurnLayer();
+    pageL.className='pdf-page left pdf-static'; pageR.className='pdf-page right pdf-static';
+    const p1=await activeDoc.getPage(spread); await renderPage(p1,canvasL);
+    if(spread+1<=total){const p2=await activeDoc.getPage(spread+1);await renderPage(p2,canvasR)}
+    else{canvasR.width=1;canvasR.height=1}
+    caption.textContent=spread+1<=total?`Halaman ${spread}–${spread+1} / ${total}`:`Halaman ${spread} / ${total}`;
+    activeSpread=spread;
+  }
+
+  async function renderTurnImage(pageNum, width, height){
+    const page=await activeDoc.getPage(pageNum);
+    const base=page.getViewport({scale:1});
+    const scale=Math.min((Math.max(120,width)-8)/base.width,(Math.max(120,height)-8)/base.height);
+    const vp=page.getViewport({scale:Math.max(.25,scale*window.devicePixelRatio)});
+    const c=document.createElement('canvas');
+    c.width=Math.floor(vp.width); c.height=Math.floor(vp.height);
+    await page.render({canvasContext:c.getContext('2d',{alpha:false}),viewport:vp}).promise;
+    return canvasToDataURL(c);
+  }
+
+  async function makeTurnLayer(dir){
+    if(!activeDoc)return null;
+    const total=activeDoc.numPages;
+    const target=dir==='forward'?activeSpread+2:activeSpread-2;
+    if(target<1 || target>total)return null;
+    const book=document.getElementById('pdfBook');
+    const r=book.getBoundingClientRect();
+    const halfW=Math.max(180,r.width/2), h=Math.max(240,r.height);
+    const layer=document.createElement('div');
+    layer.id='pdfTurnLayer';
+    layer.className='pdf-turn-layer '+(dir==='forward'?'forward':'back');
+    const front=document.createElement('div'); front.className='pdf-turn-face front';
+    const back=document.createElement('div'); back.className='pdf-turn-face back';
+    const src=dir==='forward'?canvasR:canvasL;
+    const frontUrl=canvasToDataURL(src);
+    const backUrl=await renderTurnImage(target,halfW,h);
+    if(!frontUrl||!backUrl)return null;
+    front.style.backgroundImage=`url("${frontUrl}")`;
+    back.style.backgroundImage=`url("${backUrl}")`;
+    layer.append(front,back); book.appendChild(layer);
+    return layer;
+  }
+
+  function prepareGesture(dir,g){
+    if(!g||g.preparing)return;
+    if(dir==='forward' && activeSpread+2>activeDoc.numPages)return;
+    if(dir==='back' && activeSpread-2<1)return;
+    g.dir=dir;
+    g.preparing=makeTurnLayer(dir).then(layer=>{
+      g.layer=layer;
+      if(!layer)return;
+      g.layer.style.transform=`rotateY(${turnAngle(g, g.lastX ?? g.startX)}deg)`;
+    }).catch(()=>null);
+  }
+
+  function turnAngle(g,clientX){
+    const signed=g.dir==='forward'?g.startX-clientX:clientX-g.startX;
+    g.progress=Math.max(0,Math.min(1,signed/(g.r.width*.64)));
+    const eased=1-Math.pow(1-g.progress,1.18);
+    return (g.dir==='forward'?-180:180)*eased;
+  }
+
+  function applyGesturePosition(g,clientX){
+    g.lastX=clientX;
+    if(!g.dir){
+      const dx=clientX-g.startX;
+      if(Math.abs(dx)<8)return;
+      g.dir=dx<0?'forward':'back';
+      prepareGesture(g.dir,g);
+      return;
+    }
+    if(!g.layer)return;
+    g.layer.style.transform=`rotateY(${turnAngle(g,clientX)}deg)`;
+  }
+
+  function beginBookGesture(e){
+    if(!activeDoc || gesture || (e.pointerType==='mouse'&&e.button!==0))return;
+    const book=document.getElementById('pdfBook'), r=book.getBoundingClientRect();
+    e.preventDefault();
+    gesture={startX:e.clientX,startY:e.clientY,lastX:e.clientX,lastT:performance.now(),progress:0,layer:null,preparing:null,book,r,pointerId:e.pointerId,dir:null,velocity:0};
+    book.classList.add('is-dragging'); book.setPointerCapture?.(e.pointerId);
+  }
+
+  function updateBookGesture(clientX,clientY){
+    if(!gesture)return;
+    const g=gesture;
+    const now=performance.now();
+    g.velocity=(clientX-g.lastX)/Math.max(1,now-g.lastT);
+    g.lastT=now;
+    applyGesturePosition(g,clientX);
+    g.lastY=clientY;
+  }
+
+  async function endBookGesture(e){
+    if(!gesture)return;
+    const g=gesture;
+    if(g.preparing&&!g.layer)await g.preparing;
+    if(!g.layer){gesture=null;g.book.classList.remove('is-dragging');try{g.book.releasePointerCapture?.(e.pointerId)}catch(_){}return}
+    if(g.lastX!=null)turnAngle(g,g.lastX);
+    const commit=g.progress>.16 || Math.abs(g.velocity||0)>.32;
+    const finalAngle=commit?(g.dir==='forward'?-180:180):0;
+    const layer=g.layer;
+    layer.style.transition='transform 1180ms cubic-bezier(.16,.72,.12,1)';
+    layer.style.transform=`rotateY(${finalAngle}deg)`;
+    gesture=null; g.book.classList.remove('is-dragging');
+    try{g.book.releasePointerCapture?.(e.pointerId)}catch(_){}
+    await new Promise(res=>setTimeout(res,1195));
+    layer.remove();
+    if(commit)await showSpread(g.dir==='forward'?activeSpread+2:activeSpread-2);
+    else await showSpread(activeSpread);
+  }
+
+  function bindBookTouch(){
+    const book=document.getElementById('pdfBook'); if(!book)return;
+    book.addEventListener('pointerdown',beginBookGesture,{passive:false});
+    book.addEventListener('pointermove',e=>{if(gesture){e.preventDefault();updateBookGesture(e.clientX,e.clientY)}},{passive:false});
+    book.addEventListener('pointerup',endBookGesture,{passive:false});
+    book.addEventListener('pointercancel',endBookGesture,{passive:false});
+  }
+
+  async function activateBook(){
+    if(!activePdf)return;
+    try{
+      const lib=await loadPdfJs();
+      const ab=await activePdf.file.arrayBuffer();
+      activeDoc=await lib.getDocument({data:ab}).promise;
+      modal.classList.remove('scroll-active'); document.getElementById('pdfScrollStage')?.classList.remove('active'); modal.classList.add('book-active'); stage.classList.add('active'); stage.setAttribute('aria-hidden','false');
+      await showSpread(1);
+      label.textContent='Mode Buku · '+activePdf.name.replace(/\.pdf$/i,'');
+    }catch(e){
+      alert(e.message||'Mode buku tidak dapat dibuka.'); activateScroll();
+    }
+  }
+  async function activateScroll(){
+    if(!activePdf)return;
+    modal.classList.remove('book-active'); stage.classList.remove('active'); stage.setAttribute('aria-hidden','true');
+    modal.classList.add('scroll-active');
+    const scrollStage=document.getElementById('pdfScrollStage'); scrollStage?.classList.add('active'); scrollStage?.setAttribute('aria-hidden','false');
+    label.textContent='Mode Scroll · '+activePdf.name.replace(/\.pdf$/i,'');
+    try{
+      if(!activeDoc){const lib=await loadPdfJs(); const ab=await activePdf.file.arrayBuffer(); activeDoc=await lib.getDocument({data:ab}).promise;}
+      await renderScrollDoc(activeDoc);
+    }catch(e){alert(e.message||'PDF tidak dapat dirender.');}
+  }
+
+  scrollBtn&&scrollBtn.addEventListener('click',activateScroll);
+  bookBtn&&bookBtn.addEventListener('click',activateBook);
+  document.addEventListener('keydown',e=>{
+    if(!modal.classList.contains('pdf-mode')||!modal.classList.contains('book-active'))return;
+    revealPdfHeader();
+    if(e.key==='ArrowRight'){e.preventDefault();showSpread(activeSpread+2,'forward')}
+    if(e.key==='ArrowLeft'){e.preventDefault();showSpread(activeSpread-2,'back')}
+  });
+  window.addEventListener('resize',()=>{if(activeDoc&&modal.classList.contains('book-active'))showSpread(activeSpread); else if(activeDoc&&modal.classList.contains('scroll-active'))renderScrollDoc(activeDoc)});
+  window.addEventListener('popstate',()=>{if(modal.classList.contains('pdf-mode')){closePdfCleanup();modal.classList.remove('open');document.body.style.overflow=''}});
+  const close=document.getElementById('closeModal');
+  close&&close.addEventListener('click',()=>{if(modal.classList.contains('pdf-mode')){closePdfCleanup();}});
+
+  bindBookTouch();
+  renderCards();
 })();
 </script>
 
