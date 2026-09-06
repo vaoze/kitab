@@ -280,6 +280,17 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
   border:1px solid rgba(179,129,44,.36)!important;
   border-radius:8px!important;
 }
+/* === Mode Zoom Baca (cubit 2 jari) === */
+.modal-frame-wrap{overflow:hidden!important}
+.zoom-overlay{position:absolute;inset:9px;z-index:3;display:none;touch-action:none;cursor:grab;background:transparent}
+.modal-frame-wrap.zoom-mode #frame{pointer-events:none}
+.modal-frame-wrap.zoom-mode .zoom-overlay{display:block}
+#zoomToggle.active{color:var(--gold-deep)!important;border-color:var(--gold-light)!important;background:rgba(179,129,44,.16)!important}
+.zoom-hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:9;
+ background:rgba(43,32,19,.78);color:#fdf6e6;font-size:.68rem;font-weight:600;padding:8px 15px;border-radius:999px;
+ pointer-events:none;opacity:0;transition:opacity .3s ease}
+.modal-frame-wrap.zoom-mode .zoom-hint{opacity:1}
+.modal.pdf-mode #zoomToggle{display:none!important}
 
 
 /* Module 01-09: frame visible over the full-screen page, including all 4 existing corner artworks. */
@@ -362,10 +373,9 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
   gap:5px!important;
 }
 .modal-capsule:not(.minimized) #fsBtnModal,
-.modal-capsule:not(.minimized) #newTab{
-  display:none!important;
-}
-.modal-capsule:not(.minimized) #closeModal{
+.modal-capsule:not(.minimized) #newTab,
+.modal-capsule:not(.minimized) #closeModal,
+.modal-capsule:not(.minimized) #zoomToggle{
   display:grid!important;
 }
 
@@ -468,7 +478,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 
 .modal.pdf-mode.book-active .modal-frame-wrap{background:transparent}
 .modal.pdf-mode.book-active .pdf-book-stage{padding:8px;inset:0}
-.pdf-book{touch-action:none;overscroll-behavior:contain}
+.pdf-book{touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .pdf-book-hint{transition:opacity .35s ease}
 .pdf-book.is-dragging .pdf-book-hint{opacity:0}
 @media(max-width:760px){.modal.pdf-mode .modal-capsule-wrap{top:8px;padding:0 8px}.modal.pdf-mode .modal-capsule{padding:5px 6px 5px 10px}.modal.pdf-mode.book-active .modal-frame-wrap{inset:5px!important;padding:4px!important;border-radius:4px!important;background-size:32px 32px!important}.modal.pdf-mode.book-active .pdf-book-stage{padding:2px}.modal.pdf-mode.book-active .pdf-book{width:100%;height:100%;max-height:none}}
@@ -520,7 +530,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 <section class="hero">
   <div class="eyebrow"><i></i> DIGITAL PESANTREN · EDISI 2026</div>
   <h1>Kumpulan <span class="gradient">Pelajaran Kitab Klasik</span> Pesantren</h1>
-  <p>Portal ringkas untuk membuka pelajaran nahwu, sharaf, falak, faraidh, serta berbagai alat bantu umum — dirawat dalam sentuhan emas yang hangat dan kental nuansa klasik.</p>
+  <p>Portal ringkas untuk membuka modul nahwu, sharaf, falak, faraidh, serta berbagai alat bantu umum — Mohon koreksi jika ada tulisan typo ataupun terjemah kurang sesuai kirim ke vaozeei@gmail.com - by Achmad Fauzi, terima kasih.</p>
   <div class="rule"><span class="line"></span><span class="gem"></span><span class="line r"></span></div>
   <div class="hero-actions">
     <a class="btn primary" href="#kitab">Jelajahi Pelajaran →</a>
@@ -621,9 +631,11 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
     <div class="mf-corner bl"></div><div class="mf-corner br"></div>
   </div>
   <iframe id="frame" title="Modul VAOZEE" referrerpolicy="no-referrer"></iframe>
+  <div class="zoom-overlay" id="zoomOverlay" aria-hidden="true"></div>
+  <div class="zoom-hint">Cubit 2 jari untuk zoom · geser 1 jari untuk baca · ganda-tap / tombol 🔍 untuk keluar</div>
   <div class="pdf-scroll-stage" id="pdfScrollStage" aria-hidden="true"><div class="pdf-scroll-pages" id="pdfScrollPages"></div></div>
   <div class="pdf-book-stage" id="pdfBookStage" aria-hidden="true">
-    <div class="pdf-book-hint">Geser halaman dengan jari untuk membalik buku</div>
+    <div class="pdf-book-hint">Geser halaman dengan jari • Tap kanan: berikutnya • Tap kiri: sebelumnya</div>
     <div class="pdf-book" id="pdfBook">
       <div class="pdf-page left" id="pdfPageLeft"><canvas id="pdfCanvasLeft"></canvas></div>
       <div class="pdf-page right" id="pdfPageRight"><canvas id="pdfCanvasRight"></canvas></div>
@@ -641,6 +653,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
       </div>
       <div class="modal-actions">
         <button class="icon-btn header-mini-btn" id="miniModal" title="Minimalkan header modul" aria-label="Minimalkan header modul">−</button>
+        <button class="icon-btn" id="zoomToggle" title="Mode Zoom Baca (cubit 2 jari)">🔍</button>
         <button class="icon-btn fs-btn" id="fsBtnModal" title="Layar penuh">⛶</button>
         <a class="icon-btn" id="newTab" target="_blank" rel="noopener" title="Buka di tab baru">↗</a>
         <button class="icon-btn danger" id="closeModal" title="Tutup">×</button>
@@ -770,9 +783,24 @@ function openModule(url,title,fromHistory=false,localUrl=''){
     tetap berdiri sendiri, hanya "ditonton" lewat src iframe (relatif ke folder ini
     untuk file offline, atau URL penuh untuk yang online). */
  function show(target,usedOnline){
-   frame.src=target;
+   /* Batalkan timer "kosongkan iframe" tertunda dari closeModule() sebelumnya --
+      kalau tidak, modul yang baru saja dibuka bisa tiba-tiba dikosongkan lagi. */
+   clearTimeout(frame._closeBlankTimer);
+   /* Paksa reload walau URL-nya sama persis dengan yang sedang tampil sekarang.
+      Browser tidak akan navigasi ulang kalau iframe.src di-set ke nilai yang sama,
+      sehingga membuka modul yang sama dua kali hanya menampilkan state/halaman
+      lama dari kunjungan sebelumnya (bukan versi terbaru/awal). */
+   let resolvedTarget=target;
+   try{resolvedTarget=new URL(target,location.href).href}catch(e){}
+   if(frame.src===resolvedTarget){
+     frame.src='about:blank';
+     requestAnimationFrame(()=>{frame.src=target});
+   }else{
+     frame.src=target;
+   }
    frame.dataset.fallbackLocal=usedOnline?offlineUrl:'';
    frame.dataset.loaded='';
+   if(window.vaozeeResetZoomMode)window.vaozeeResetZoomMode();
    modalTitle.textContent=title;
    newTab.href=target;
    modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
@@ -811,7 +839,10 @@ function openModule(url,title,fromHistory=false,localUrl=''){
 function closeModule(fromPopState=false){
  modal.classList.remove('open'); modal.setAttribute('aria-hidden','true');
  if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
- setTimeout(()=>frame.src='about:blank',220); document.body.style.overflow='';
+ clearTimeout(frame._closeBlankTimer);
+ frame._closeBlankTimer=setTimeout(()=>{frame.src='about:blank'},220);
+ document.body.style.overflow='';
+ if(window.vaozeeResetZoomMode)window.vaozeeResetZoomMode();
  if(!fromPopState && history.state && history.state.vaozeeModule) history.back();
 }
 frame.addEventListener('load',()=>{loader.classList.add('done');frame.dataset.loaded='1';clearTimeout(frame._fallbackTimer)});
@@ -937,6 +968,75 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
   else init();
   new MutationObserver(init).observe(document.body,{childList:true,subtree:true});
+})();
+
+/* === Mode Zoom Baca -- cubit 2 jari di atas iframe modul ===
+   Catatan teknis: touch/pointer yang jatuh persis di atas <iframe> TIDAK PERNAH
+   sampai ke dokumen induk (berlaku untuk semua iframe, apalagi yang online/beda
+   origin) -- jadi gestur cubit tidak bisa "didengar" langsung dari iframe-nya.
+   Solusinya: lapisan transparan (zoomOverlay) di atas iframe yang hanya aktif
+   ketika Mode Zoom dinyalakan lewat tombol 🔍. Saat aktif: cubit 2 jari = zoom,
+   geser 1 jari = baca ke segala arah, tombol 🔍 lagi / dobel-tap = keluar/reset. */
+(function(){
+  const toggle=document.getElementById('zoomToggle');
+  const wrap=document.querySelector('.modal-frame-wrap');
+  const overlay=document.getElementById('zoomOverlay');
+  const frameEl=document.getElementById('frame');
+  if(!toggle||!wrap||!overlay||!frameEl)return;
+
+  let scale=1, tx=0, ty=0;
+  const pointers=new Map();
+  let pinchStartDist=0, pinchStartScale=1, panStart=null;
+
+  function apply(){ frameEl.style.transformOrigin='0 0'; frameEl.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`; }
+  function clampPan(){
+    const r=wrap.getBoundingClientRect();
+    const maxX=Math.max(0,r.width*(scale-1)), maxY=Math.max(0,r.height*(scale-1));
+    tx=Math.min(0,Math.max(-maxX,tx)); ty=Math.min(0,Math.max(-maxY,ty));
+  }
+  function reset(){ scale=1; tx=0; ty=0; frameEl.style.transform=''; frameEl.style.transformOrigin=''; }
+  window.vaozeeResetZoomMode=function(){ wrap.classList.remove('zoom-mode'); toggle.classList.remove('active'); toggle.title='Mode Zoom Baca (cubit 2 jari)'; pointers.clear(); panStart=null; reset(); };
+
+  toggle.addEventListener('click',()=>{
+    const on=!wrap.classList.contains('zoom-mode');
+    if(on){ wrap.classList.add('zoom-mode'); toggle.classList.add('active'); toggle.title='Keluar Mode Zoom'; }
+    else{ window.vaozeeResetZoomMode(); }
+  });
+
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+  overlay.addEventListener('pointerdown',e=>{
+    overlay.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pointers.size===2){
+      const [a,b]=[...pointers.values()];
+      pinchStartDist=dist(a,b)||1; pinchStartScale=scale;
+    }else if(pointers.size===1){
+      panStart={x:e.clientX-tx,y:e.clientY-ty};
+    }
+  });
+  overlay.addEventListener('pointermove',e=>{
+    if(!pointers.has(e.pointerId))return;
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pointers.size===2){
+      const [a,b]=[...pointers.values()];
+      const d=dist(a,b)||1;
+      scale=Math.min(4,Math.max(1,pinchStartScale*(d/pinchStartDist)));
+      clampPan(); apply();
+    }else if(pointers.size===1 && panStart && scale>1){
+      tx=e.clientX-panStart.x; ty=e.clientY-panStart.y;
+      clampPan(); apply();
+    }
+    e.preventDefault();
+  },{passive:false});
+  function endPtr(e){
+    pointers.delete(e.pointerId);
+    if(pointers.size===1){ const [p]=[...pointers.values()]; panStart={x:p.x-tx,y:p.y-ty}; }
+    else panStart=null;
+  }
+  overlay.addEventListener('pointerup',endPtr);
+  overlay.addEventListener('pointercancel',endPtr);
+  overlay.addEventListener('dblclick',()=>{ window.vaozeeResetZoomMode(); });
 })();
 /* === Sinkronisasi Modul otomatis dari Google Sheet (Apps Script) + Manager === */
 (function(){
@@ -1341,7 +1441,7 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
 
   const STORAGE='vaozee_pdf_reader_v1';
   let pdfEntries=[];
-  let activePdf=null, activeDoc=null, activeSpread=1, pdfLibPromise=null;
+  let activePdf=null, activeDoc=null, activeSpread=1, pdfLibPromise=null, gesture=null, suppressBookClickUntil=0;
 
   function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
   function updateEmpty(){empty.style.display=pdfEntries.length?'none':'block'}
@@ -1563,8 +1663,8 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
 
   function turnAngle(g,clientX){
     const signed=g.dir==='forward'?g.startX-clientX:clientX-g.startX;
-    g.progress=Math.max(0,Math.min(1,signed/(g.r.width*.64)));
-    const eased=1-Math.pow(1-g.progress,1.18);
+    g.progress=Math.max(0,Math.min(1,signed/(g.r.width*.58)));
+    const eased=1-Math.pow(1-g.progress,1.12);
     return (g.dir==='forward'?-180:180)*eased;
   }
 
@@ -1572,7 +1672,7 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
     g.lastX=clientX;
     if(!g.dir){
       const dx=clientX-g.startX;
-      if(Math.abs(dx)<8)return;
+      if(Math.abs(dx)<10)return;
       g.dir=dx<0?'forward':'back';
       prepareGesture(g.dir,g);
       return;
@@ -1581,38 +1681,87 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
     g.layer.style.transform=`rotateY(${turnAngle(g,clientX)}deg)`;
   }
 
+  function releasePointer(g,e){
+    try{g.book.releasePointerCapture?.(g.pointerId ?? e?.pointerId)}catch(_){}
+  }
+
+  async function finishTapTurn(dir){
+    if(!activeDoc)return;
+    if(dir==='forward' && activeSpread+2>activeDoc.numPages)return;
+    if(dir==='back' && activeSpread-2<1)return;
+    const book=document.getElementById('pdfBook');
+    const r=book.getBoundingClientRect();
+    const g={startX:dir==='forward'?r.right:r.left,lastX:dir==='forward'?r.left:r.right,r,book,dir,progress:1};
+    const layer=await makeTurnLayer(dir);
+    if(!layer){await showSpread(dir==='forward'?activeSpread+2:activeSpread-2);return;}
+    layer.style.transform='rotateY(0deg)';
+    requestAnimationFrame(()=>{
+      layer.style.transition='transform 820ms cubic-bezier(.18,.74,.14,1)';
+      layer.style.transform=`rotateY(${dir==='forward'?-180:180}deg)`;
+    });
+    await new Promise(res=>setTimeout(res,850));
+    layer.remove();
+    await showSpread(dir==='forward'?activeSpread+2:activeSpread-2);
+  }
+
   function beginBookGesture(e){
     if(!activeDoc || gesture || (e.pointerType==='mouse'&&e.button!==0))return;
     const book=document.getElementById('pdfBook'), r=book.getBoundingClientRect();
     e.preventDefault();
-    gesture={startX:e.clientX,startY:e.clientY,lastX:e.clientX,lastT:performance.now(),progress:0,layer:null,preparing:null,book,r,pointerId:e.pointerId,dir:null,velocity:0};
-    book.classList.add('is-dragging'); book.setPointerCapture?.(e.pointerId);
+    gesture={startX:e.clientX,startY:e.clientY,lastX:e.clientX,lastY:e.clientY,lastT:performance.now(),progress:0,layer:null,preparing:null,book,r,pointerId:e.pointerId,dir:null,velocity:0,moved:false};
+    book.classList.add('is-dragging');
+    try{book.setPointerCapture?.(e.pointerId)}catch(_){}
   }
 
   function updateBookGesture(clientX,clientY){
     if(!gesture)return;
     const g=gesture;
+    const dx=clientX-g.startX, dy=clientY-g.startY;
     const now=performance.now();
     g.velocity=(clientX-g.lastX)/Math.max(1,now-g.lastT);
     g.lastT=now;
+    g.lastX=clientX; g.lastY=clientY;
+    if(Math.abs(dx)>10 || Math.abs(dy)>10)g.moved=true;
+    // Membalik halaman harus dominan horizontal agar scroll/tap tidak salah terbaca.
+    if(Math.abs(dx)<10 || Math.abs(dx)<Math.abs(dy)*.72)return;
     applyGesturePosition(g,clientX);
-    g.lastY=clientY;
   }
 
   async function endBookGesture(e){
     if(!gesture)return;
     const g=gesture;
+    const dx=g.lastX-g.startX;
+    const dy=g.lastY-g.startY;
+    const isTap=Math.abs(dx)<14 && Math.abs(dy)<14;
+
+    if(isTap){
+      suppressBookClickUntil=Date.now()+650;
+      gesture=null;
+      g.book.classList.remove('is-dragging');
+      releasePointer(g,e);
+      const rect=g.book.getBoundingClientRect();
+      const dir=e.clientX>=rect.left+rect.width/2?'forward':'back';
+      // Tap kiri = halaman sebelumnya, tap kanan = halaman berikutnya.
+      finishTapTurn(dir);
+      return;
+    }
+
+    if(!g.dir && Math.abs(dx)>=10 && Math.abs(dx)>=Math.abs(dy)*.72){
+      g.dir=dx<0?'forward':'back';
+      prepareGesture(g.dir,g);
+    }
     if(g.preparing&&!g.layer)await g.preparing;
-    if(!g.layer){gesture=null;g.book.classList.remove('is-dragging');try{g.book.releasePointerCapture?.(e.pointerId)}catch(_){}return}
-    if(g.lastX!=null)turnAngle(g,g.lastX);
-    const commit=g.progress>.16 || Math.abs(g.velocity||0)>.32;
+    if(!g.layer){
+      gesture=null;g.book.classList.remove('is-dragging');releasePointer(g,e);return;
+    }
+    turnAngle(g,g.lastX);
+    const commit=g.progress>.13 || Math.abs(g.velocity||0)>.18;
     const finalAngle=commit?(g.dir==='forward'?-180:180):0;
     const layer=g.layer;
-    layer.style.transition='transform 1180ms cubic-bezier(.16,.72,.12,1)';
+    layer.style.transition='transform 980ms cubic-bezier(.18,.74,.14,1)';
     layer.style.transform=`rotateY(${finalAngle}deg)`;
-    gesture=null; g.book.classList.remove('is-dragging');
-    try{g.book.releasePointerCapture?.(e.pointerId)}catch(_){}
-    await new Promise(res=>setTimeout(res,1195));
+    gesture=null; g.book.classList.remove('is-dragging'); releasePointer(g,e);
+    await new Promise(res=>setTimeout(res,1000));
     layer.remove();
     if(commit)await showSpread(g.dir==='forward'?activeSpread+2:activeSpread-2);
     else await showSpread(activeSpread);
@@ -1624,6 +1773,13 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
     book.addEventListener('pointermove',e=>{if(gesture){e.preventDefault();updateBookGesture(e.clientX,e.clientY)}},{passive:false});
     book.addEventListener('pointerup',endBookGesture,{passive:false});
     book.addEventListener('pointercancel',endBookGesture,{passive:false});
+    // Dukungan sentuhan lama pada perangkat yang tidak mengirim pointer event secara konsisten.
+    book.addEventListener('click',e=>{
+      if(Date.now()<suppressBookClickUntil || !activeDoc || gesture || e.target.closest('button,a'))return;
+      const rect=book.getBoundingClientRect();
+      if(e.clientX<rect.left || e.clientX>rect.right)return;
+      finishTapTurn(e.clientX>=rect.left+rect.width/2?'forward':'back');
+    });
   }
 
   async function activateBook(){
