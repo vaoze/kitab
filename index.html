@@ -7,6 +7,10 @@
 <meta name="description" content="Kumpulan pelajaran kitab klasik pesantren dan utilitas umum VAOZEE.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://www.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://drive.google.com">
+<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -258,9 +262,28 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 }
 .modal-capsule.minimized .modal-capsule-left,
 .modal-capsule.minimized #fsBtnModal,
-.modal-capsule.minimized #newTab,
+.modal-capsule.minimized #toolsDropdown,
 .modal-capsule.minimized #closeModal{display:none!important}
 .modal-capsule.minimized .modal-actions{gap:0!important}
+
+/* ---------- kompak: menu tools jadi satu droplist (bukan deretan tombol) ---------- */
+.tools-dropdown{position:relative;display:flex}
+.tools-menu{position:absolute;top:calc(100% + 9px);right:0;min-width:198px;display:none;flex-direction:column;gap:1px;
+ padding:6px;border-radius:16px;background:rgba(253,249,238,.98);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
+ border:1px solid rgba(227,195,119,.6);box-shadow:var(--shadow);z-index:50}
+.tools-dropdown.open .tools-menu{display:flex}
+.tools-menu .menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:9px 11px;border-radius:11px;border:0;background:transparent;
+ color:var(--ink);font:600 .74rem/1.2 var(--label);text-decoration:none;cursor:pointer;text-align:left;white-space:nowrap;appearance:none}
+.tools-menu .menu-item span{width:16px;text-align:center;flex:none}
+.tools-menu .menu-item:hover{background:rgba(179,129,44,.12);color:var(--gold-deep)}
+.tools-menu .menu-item.active{background:rgba(179,129,44,.16);color:var(--gold-deep)}
+.tools-menu-label{padding:6px 11px 7px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep)}
+.modal.pdf-mode .tools-menu{background:rgba(24,22,18,.95);border-color:rgba(255,255,255,.14)}
+.modal.pdf-mode .tools-menu .menu-item{color:#f3ead4}
+.modal.pdf-mode .tools-menu .menu-item:hover,.modal.pdf-mode .tools-menu .menu-item.active{background:rgba(255,255,255,.12);color:#fff}
+.modal.pdf-mode .tools-menu-label{color:var(--gold-light)}
+/* hanya item relevan mode PDF yang tampil saat sedang membaca PDF */
+.modal:not(.pdf-mode) #pdfScrollMode,.modal:not(.pdf-mode) #pdfBookMode,.modal:not(.pdf-mode) #pdfModeLabel{display:none!important}
 
 /* Module 01-09 viewer frame: same gold/classic framing, with the existing corner artwork in all 4 corners. */
 .modal-frame-wrap{
@@ -373,11 +396,11 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
   gap:5px!important;
 }
 .modal-capsule:not(.minimized) #fsBtnModal,
-.modal-capsule:not(.minimized) #newTab,
 .modal-capsule:not(.minimized) #closeModal,
-.modal-capsule:not(.minimized) #zoomToggle{
+.modal-capsule:not(.minimized) #toolsDropdown{
   display:grid!important;
 }
+.modal-capsule:not(.minimized) #toolsDropdown{display:flex!important}
 
 /* === Chapter 03: PDF Reader === */
 .pdf-reader-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:0 0 18px}
@@ -415,8 +438,6 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 @keyframes pdfTurnBack{0%{transform:rotateY(0deg);filter:brightness(1)}45%{filter:brightness(.88)}100%{transform:rotateY(180deg);filter:brightness(.98)}}
 .pdf-book-caption{pointer-events:none;position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font-size:.62rem;font-weight:700;color:var(--gold-deep);background:rgba(253,249,238,.86);padding:6px 12px;border-radius:999px;border:1px solid var(--line);z-index:20;white-space:nowrap}
 .pdf-book-hint{position:absolute;top:58px;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--muted);font-weight:700;background:rgba(253,249,238,.82);padding:6px 10px;border-radius:999px;z-index:20}
-.pdf-reader-modal-tools{position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:8;display:none}
-.modal.pdf-mode .pdf-reader-modal-tools{display:flex}
 .modal.pdf-mode #frame{display:none!important}
 .modal.pdf-mode.book-active #frame{display:none}
 .modal.pdf-mode.book-active .modal-frame-wrap{
@@ -455,7 +476,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 .pdf-scroll-page-wrap{position:relative;display:block;max-width:100%;min-width:220px;background:#fff;box-shadow:0 8px 28px rgba(0,0,0,.28);border-radius:2px;overflow:hidden}.pdf-scroll-page{display:block;width:100%;height:100%;background:#fff}
 .modal.pdf-mode.scroll-active #frame{display:none}
 .modal.pdf-mode.scroll-active .pdf-book-stage{display:none}
-.modal.pdf-mode.scroll-active .pdf-scroll-stage{display:block}.modal.pdf-mode.scroll-active .modal-capsule-wrap{top:8px}.modal.pdf-mode.scroll-active .pdf-reader-modal-tools{display:flex!important}
+.modal.pdf-mode.scroll-active .pdf-scroll-stage{display:block}.modal.pdf-mode.scroll-active .modal-capsule-wrap{top:8px}
 
 /* PDF reader: immersive fullscreen + floating auto-hide header */
 .modal.pdf-mode{background:#000}
@@ -468,12 +489,10 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 .modal.pdf-mode .modal-capsule{width:auto!important;max-width:none!important;min-height:0;padding:5px 7px 5px 9px!important;gap:6px!important;background:rgba(18,18,18,.22)!important;border-color:rgba(255,255,255,.12)!important;box-shadow:0 6px 24px rgba(0,0,0,.14)!important}
 .modal.pdf-mode .modal-capsule-left{display:none!important}
 .modal.pdf-mode .modal-actions{gap:5px!important}
-.modal.pdf-mode #miniModal,.modal.pdf-mode #fsBtnModal,.modal.pdf-mode #newTab{display:grid!important}
-.modal.pdf-mode .pdf-reader-modal-tools{position:static;transform:none;display:flex!important;gap:4px;padding:0;background:transparent;border:0;box-shadow:none}
-.modal.pdf-mode .pdf-mode-label{display:none!important}
-.modal.pdf-mode .pdf-reader-modal-tools .icon-btn,.modal.pdf-mode #closeModal{width:30px;height:30px;border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.10);color:#fff;box-shadow:none}
+.modal.pdf-mode #miniModal,.modal.pdf-mode #fsBtnModal,.modal.pdf-mode #toolsDropdown{display:grid!important}
+.modal.pdf-mode #toolsDropdown{display:flex!important}
+.modal.pdf-mode #miniModal,.modal.pdf-mode #fsBtnModal,.modal.pdf-mode #closeModal,.modal.pdf-mode #toolsMoreBtn{width:30px;height:30px;border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.10);color:#fff;box-shadow:none}
 .modal.pdf-mode.scroll-active .modal-capsule{opacity:.78}
-.modal.pdf-mode.scroll-active .pdf-reader-modal-tools{display:flex!important}
 .modal.pdf-mode.scroll-active .pdf-scroll-stage{scrollbar-width:thin}
 
 .modal.pdf-mode.book-active .modal-frame-wrap{background:transparent}
@@ -646,16 +665,19 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
   <div class="modal-capsule-wrap">
     <div class="modal-capsule">
       <div class="modal-capsule-left"><span class="dot"></span><div class="modal-title" id="modalTitle">Modul</div></div>
-      <div class="pdf-reader-modal-tools" id="pdfReaderTools">
-        <span class="pdf-mode-label" id="pdfModeLabel">Baca PDF</span>
-        <button class="icon-btn" id="pdfScrollMode" title="Mode scroll biasa">↕</button>
-        <button class="icon-btn" id="pdfBookMode" title="Mode buku halaman per halaman">▤</button>
-      </div>
       <div class="modal-actions">
         <button class="icon-btn header-mini-btn" id="miniModal" title="Minimalkan header modul" aria-label="Minimalkan header modul">−</button>
-        <button class="icon-btn" id="zoomToggle" title="Mode Zoom Baca (cubit 2 jari)">🔍</button>
+        <div class="tools-dropdown" id="toolsDropdown">
+          <button type="button" class="icon-btn" id="toolsMoreBtn" title="Menu tampilan" aria-haspopup="true" aria-expanded="false" aria-label="Menu tampilan">⋯</button>
+          <div class="tools-menu" id="toolsMenu" role="menu" aria-hidden="true">
+            <div class="tools-menu-label" id="pdfModeLabel">Baca PDF</div>
+            <button type="button" class="menu-item" id="pdfScrollMode" role="menuitem"><span>↕</span> Mode Scroll</button>
+            <button type="button" class="menu-item" id="pdfBookMode" role="menuitem"><span>▤</span> Mode Buku (per halaman)</button>
+            <button type="button" class="menu-item" id="zoomToggle" role="menuitem"><span>🔍</span> Mode Zoom Baca</button>
+            <a class="menu-item" id="newTab" target="_blank" rel="noopener" role="menuitem"><span>↗</span> Buka di Tab Baru</a>
+          </div>
+        </div>
         <button class="icon-btn fs-btn" id="fsBtnModal" title="Layar penuh">⛶</button>
-        <a class="icon-btn" id="newTab" target="_blank" rel="noopener" title="Buka di tab baru">↗</a>
         <button class="icon-btn danger" id="closeModal" title="Tutup">×</button>
       </div>
     </div>
@@ -896,9 +918,27 @@ const clock=document.getElementById('clock');
 function tick(){clock.textContent=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
 tick();setInterval(tick,1000);
 
-/* ---- scroll reveal ---- */
-const io=new IntersectionObserver(entries=>entries.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target)}}),{threshold:.12});
-document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
+/* ---- scroll reveal ----
+   Catatan perbaikan: sebagian browser mobile (terutama WebView Android) kadang
+   gagal menghitung ulang intersection dengan benar saat kombinasi
+   transform+opacity+backdrop-filter dipakai bersamaan -- akibatnya sebuah
+   section bisa "nyangkut" pada opacity:0 (tampak blank) walau sudah discroll
+   ke posisinya, dan baru muncul setelah ada reflow paksa (mis. ganti mode
+   tampilan). Supaya konten TIDAK PERNAH permanen blank, dipasang dua lapis
+   pengaman: threshold lebih rendah + rootMargin lebih longgar, DAN timer
+   cadangan yang memaksa semua section tampil walau observer gagal memicu. */
+const revealTargets=[...document.querySelectorAll('[data-reveal]')];
+function forceRevealAll(){revealTargets.forEach(el=>el.classList.add('in'))}
+if('IntersectionObserver' in window){
+  const io=new IntersectionObserver(entries=>entries.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target)}}),{threshold:0,rootMargin:'0px 0px 200px 0px'});
+  revealTargets.forEach(el=>io.observe(el));
+  // Jaring pengaman: kalau ada yang belum juga 'in' setelah beberapa saat, tampilkan langsung.
+  setTimeout(()=>{revealTargets.forEach(el=>{if(!el.classList.contains('in') && el.getBoundingClientRect().top<innerHeight*1.5)el.classList.add('in')})},900);
+  setTimeout(forceRevealAll,3000);
+  window.addEventListener('orientationchange',()=>setTimeout(forceRevealAll,300));
+}else{
+  forceRevealAll();
+}
 </script>
 
 <script>
@@ -968,6 +1008,23 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
   else init();
   new MutationObserver(init).observe(document.body,{childList:true,subtree:true});
+})();
+
+/* === Droplist kompak tombol header modul/iframe ===
+   Tombol sekunder (mode scroll/buku, zoom baca, buka tab baru) digabung jadi
+   satu droplist supaya baris header tetap ringkas dan tombol Tutup (×) selalu
+   punya ruang sendiri, tidak pernah berdesakan/ketutupan di layar mobile. */
+(function(){
+  const dd=document.getElementById('toolsDropdown'), moreBtn=document.getElementById('toolsMoreBtn'), menu=document.getElementById('toolsMenu');
+  if(!dd||!moreBtn||!menu)return;
+  function closeMenu(){dd.classList.remove('open');moreBtn.setAttribute('aria-expanded','false');menu.setAttribute('aria-hidden','true')}
+  function openMenu(){dd.classList.add('open');moreBtn.setAttribute('aria-expanded','true');menu.setAttribute('aria-hidden','false')}
+  moreBtn.addEventListener('click',e=>{e.stopPropagation();dd.classList.contains('open')?closeMenu():openMenu()});
+  menu.addEventListener('click',e=>{ if(e.target.closest('.menu-item')) setTimeout(closeMenu,80); });
+  document.addEventListener('click',e=>{ if(dd.classList.contains('open') && !dd.contains(e.target)) closeMenu(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
+  document.getElementById('closeModal')&&document.getElementById('closeModal').addEventListener('click',closeMenu);
+  window.vaozeeCloseToolsMenu=closeMenu;
 })();
 
 /* === Mode Zoom Baca -- cubit 2 jari di atas iframe modul ===
@@ -1459,16 +1516,39 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
     if(!res.ok)throw new Error('Apps Script merespons status '+res.status);
     return res.json();
   }
+  /* === Cache daftar PDF di sessionStorage ===
+     Supaya Chapter 03 tidak selalu terasa lambat: daftar terakhir yang pernah
+     dimuat langsung ditampilkan (instan), lalu disegarkan diam-diam dari
+     jaringan. Ini "stale-while-revalidate" versi ringan, tanpa server tambahan. */
+  const PDF_LIST_CACHE_KEY='vaozee_pdf_list_cache_v1';
+  function loadCachedList(){
+    try{ const raw=sessionStorage.getItem(PDF_LIST_CACHE_KEY); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+  }
+  function saveCachedList(list){
+    try{ sessionStorage.setItem(PDF_LIST_CACHE_KEY,JSON.stringify(list)); }catch(e){}
+  }
+  function upsertDriveEntry(f){
+    const id='drive:'+f.id;
+    const name=(f.name&&String(f.name).trim())||'PDF Tanpa Judul';
+    const existing=pdfEntries.find(x=>x.id===id);
+    if(existing){ existing.name=name; existing.size=Number(f.size)||existing.size||0; return; }
+    pdfEntries.push({id,name,path:'Google Drive · Kitab Klasik PDF',driveId:f.id,remote:true,size:Number(f.size)||0});
+  }
   async function loadDriveEntries(){
+    const cached=loadCachedList();
+    if(cached&&cached.length){
+      cached.forEach(upsertDriveEntry);
+      pdfEntries.sort((a,b)=>a.name.localeCompare(b.name,'id'));
+      renderCards();
+    }
     try{
       const r=await apiListDrivePdf(PDF_DRIVE_FOLDER_ID);
       if(!r||!r.ok){console.warn('Gagal memuat daftar PDF dari Google Drive:',r&&r.error);return}
       const files=(r.files||[]).filter(f=>f.kind!=='folder'&&((f.mimeType||'').includes('pdf')||/\.pdf$/i.test(f.name||'')));
-      files.forEach(f=>{
-        const id='drive:'+f.id;
-        if(pdfEntries.some(x=>x.id===id))return;
-        pdfEntries.push({id,name:f.name,path:'Google Drive · Kitab Klasik PDF',driveId:f.id,remote:true,size:Number(f.size)||0});
-      });
+      saveCachedList(files.map(f=>({id:f.id,name:f.name,size:f.size})));
+      const freshIds=new Set(files.map(f=>'drive:'+f.id));
+      pdfEntries=pdfEntries.filter(x=>!x.remote||freshIds.has(x.id)); // buang entri lama yg sudah dihapus di Drive
+      files.forEach(upsertDriveEntry);
       pdfEntries.sort((a,b)=>a.name.localeCompare(b.name,'id'));
       renderCards();
     }catch(e){console.warn('Tidak bisa memuat PDF dari Google Drive:',e);}
@@ -1522,21 +1602,81 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
     if(!j||!j.ok||!j.token)throw new Error(j&&j.error?j.error:'Token akses Drive belum tersedia (action "driveToken" belum ditambahkan di Apps Script).');
     return j.token;
   }
-  async function openDriveDirect(x,btn){
-    const oldLabel=btn?btn.textContent:'';
-    if(btn){btn.disabled=true;btn.textContent='⏳ Memuat…';}
+
+  /* === Cache byte PDF yang sudah pernah dibuka (Cache Storage) ===
+     Supaya buka ulang kitab yang sama jadi hampir instan (tidak unduh ulang),
+     ini pengganti paling ringan dari menyimpan PDF di server tambahan. */
+  const PDF_BLOB_CACHE='vaozee-pdf-blob-v1';
+  async function getCachedPdfBlob(driveId){
+    if(!('caches' in window))return null;
     try{
-      const token=await getDriveToken();
-      const res=await fetch('https://www.googleapis.com/drive/v3/files/'+x.driveId+'?alt=media',{headers:{Authorization:'Bearer '+token}});
-      if(!res.ok)throw new Error('Gagal mengambil file dari Drive (status '+res.status+').');
-      const blob=await res.blob();
+      const c=await caches.open(PDF_BLOB_CACHE);
+      const res=await c.match('https://vaozee-pdf.cache/'+driveId);
+      return res?await res.blob():null;
+    }catch(e){return null}
+  }
+  async function setCachedPdfBlob(driveId,blob){
+    if(!('caches' in window))return;
+    try{
+      const c=await caches.open(PDF_BLOB_CACHE);
+      await c.put('https://vaozee-pdf.cache/'+driveId,new Response(blob,{headers:{'Content-Type':'application/pdf'}}));
+    }catch(e){/* kuota cache penuh/gagal -- tidak fatal, cukup lewati */}
+  }
+
+  /* === Ambil PDF langsung lewat Drive API (dipakai untuk SEMUA PDF Drive) ===
+     Kenapa tidak lagi pakai iframe "/preview" Google sebagai jalur utama:
+     folder sengaja TIDAK dibagikan publik (lihat catatan di atas), jadi
+     iframe pratinjau bisa menampilkan halaman "tidak ditemukan"/butuh akses
+     padahal URL-nya valid dan koneksi baik-baik saja -- iframe lintas-origin
+     tidak bisa dideteksi gagal oleh halaman ini karena kontennya tidak bisa
+     dibaca (CORS), jadi tidak ada cara otomatis memperbaikinya selain
+     menghindari sepenuhnya. Mengambil byte lewat token Apps Script (akun
+     pemilik Drive) lalu merender dengan pdf.js lokal jauh lebih konsisten,
+     lebih ringan (tanpa UI Google Drive yang berat), dan judul selalu benar
+     karena diambil dari data folder sendiri, bukan dari halaman Google. */
+  async function fetchDrivePdfBlob(x,onProgress){
+    const cached=await getCachedPdfBlob(x.driveId);
+    if(cached)return cached;
+    const token=await getDriveToken();
+    const res=await fetch('https://www.googleapis.com/drive/v3/files/'+x.driveId+'?alt=media',{headers:{Authorization:'Bearer '+token}});
+    if(!res.ok)throw new Error('Gagal mengambil file dari Drive (status '+res.status+').');
+    const total=Number(res.headers.get('Content-Length'))||x.size||0;
+    let blob;
+    if(res.body&&res.body.getReader&&total){
+      const reader=res.body.getReader();const chunks=[];let received=0;
+      while(true){
+        const {done,value}=await reader.read();
+        if(done)break;
+        chunks.push(value);received+=value.length;
+        if(onProgress)onProgress(Math.min(99,Math.round(received/total*100)));
+      }
+      blob=new Blob(chunks,{type:'application/pdf'});
+    }else{
+      blob=await res.blob();
+    }
+    setCachedPdfBlob(x.driveId,blob);
+    return blob;
+  }
+
+  async function openDriveDirect(x,btn){
+    const isLarge=x.size>PDF_LARGE_THRESHOLD;
+    const oldLabel=btn?btn.textContent:'';
+    if(btn)btn.textContent='⏳ Memuat…';
+    try{
+      const blob=await fetchDrivePdfBlob(x,pct=>{ if(btn)btn.textContent='⏳ '+pct+'%'; });
       const file=new File([blob],x.name,{type:'application/pdf'});
       openPdf({...x,file});
     }catch(e){
-      console.warn('Buka langsung gagal, jatuh ke unduhan tab baru:',e);
-      window.open('https://drive.google.com/uc?id='+x.driveId+'&export=download','_blank','noopener');
+      console.warn('Buka langsung gagal:',e);
+      if(isLarge){
+        alert('File ini berukuran besar dan jalur baca langsung gagal ('+(e&&e.message||e)+'). File akan diunduh ke perangkat sebagai gantinya.');
+        window.open('https://drive.google.com/uc?id='+x.driveId+'&export=download','_blank','noopener');
+      }else{
+        // Jaring pengaman terakhir: coba pratinjau Google (perlu file dibagikan/izin akun).
+        openModule('https://drive.google.com/file/d/'+x.driveId+'/preview',x.name.replace(/\.pdf$/i,''));
+      }
     }finally{
-      if(btn){btn.disabled=false;btn.textContent=oldLabel||'⬇ Langsung';}
+      if(btn)btn.textContent=oldLabel||'Baca PDF →';
     }
   }
 
@@ -1544,30 +1684,25 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
     grid.innerHTML=pdfEntries.map((x,i)=>{
       const isLarge=x.remote&&x.size>PDF_LARGE_THRESHOLD;
       const sizeLabel=x.remote&&x.size?fmtSize(x.size):'';
+      const title=(x.name||'PDF Tanpa Judul').replace(/\.pdf$/i,'')||'PDF Tanpa Judul';
       return `<div class="card pdf-card" data-pdf-id="${esc(x.id)}">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
       <div class="card-top"><span class="num">PDF ${String(i+1).padStart(2,'0')}</span><span class="badge">${x.remote?(isLarge?'PDF · BESAR':'PDF · DRIVE'):'PDF'}</span></div>
       <div class="icon">PDF</div>
-      <div class="card-body"><h3>${esc(x.name.replace(/\.pdf$/i,''))}</h3><p>${x.remote?(isLarge?'File berukuran besar ('+esc(sizeLabel)+') -- otomatis dibuka lewat jalur langsung, bukan pratinjau Google.':'Kitab PDF dari koleksi Google Drive, dibuka langsung di jendela modul.'):'Pembaca PDF VAOZEE dengan mode scroll biasa atau mode buku halaman per halaman.'}</p><div class="pdf-meta">${esc(x.path||x.name)}${sizeLabel?' · '+esc(sizeLabel):''}</div></div>
-      <div class="card-bottom"><span class="path">${esc(x.name)}</span><span class="open" data-pdf-open>${x.remote?(isLarge?'⚡ Buka Langsung →':'Baca PDF →'):'Buka PDF →'}</span>${x.remote&&!isLarge?`<button type="button" class="btn" style="padding:4px 9px;font-size:.62rem;margin-left:6px" data-pdf-direct title="Kalau pratinjau gagal karena file besar (&gt;100MB), pakai tombol ini">⬇ Langsung</button>`:''}</div>
+      <div class="card-body"><h3>${esc(title)}</h3><p>${x.remote?(isLarge?'File berukuran besar ('+esc(sizeLabel)+') -- diunduh langsung lalu dibuka di pembaca VAOZEE.':'Kitab PDF dari koleksi Google Drive, dibuka di pembaca VAOZEE (mode scroll/buku).'):'Pembaca PDF VAOZEE dengan mode scroll biasa atau mode buku halaman per halaman.'}</p><div class="pdf-meta">${esc(x.path||x.name||'')}${sizeLabel?' · '+esc(sizeLabel):''}</div></div>
+      <div class="card-bottom"><span class="path">${esc(x.name||'PDF Tanpa Judul')}</span><span class="open" data-pdf-open>Baca PDF →</span></div>
     </div>`;
     }).join('');
     grid.querySelectorAll('.pdf-card').forEach(card=>{
       const x=pdfEntries.find(y=>y.id===card.dataset.pdfId); if(!x)return;
-      const isLarge=x.remote&&x.size>PDF_LARGE_THRESHOLD;
-      /* PDF dari Google Drive dibaca lewat iframe modul yang sama persis
-         dengan modul lain (openModule + #frame) -- bukan viewer buku/scroll
-         khusus, yang tetap dipakai hanya untuk PDF lokal di perangkat.
-         KECUALI file yang diketahui besar (>~95MB): itu langsung diarahkan
-         ke jalur "buka langsung" karena Google pasti menolak pratinjaunya. */
-      card.addEventListener('click',(e)=>{
-        if(e.target.closest('[data-pdf-direct]'))return;
-        if(x.remote&&isLarge)openDriveDirect(x,card.querySelector('[data-pdf-open]'));
-        else if(x.remote)openModule('https://drive.google.com/file/d/'+x.driveId+'/preview',x.name.replace(/\.pdf$/i,''));
+      /* Semua PDF (lokal maupun dari Google Drive) dibuka lewat pembaca VAOZEE
+         sendiri (mode scroll/buku), BUKAN lewat iframe pratinjau Google --
+         supaya tidak lagi kena halaman "tidak ditemukan"/butuh izin, judul
+         selalu benar, dan tampilannya konsisten di semua perangkat. */
+      card.addEventListener('click',()=>{
+        if(x.remote)openDriveDirect(x,card.querySelector('[data-pdf-open]'));
         else openPdf(x);
       });
-      const directBtn=card.querySelector('[data-pdf-direct]');
-      if(directBtn)directBtn.addEventListener('click',(e)=>{e.stopPropagation();openDriveDirect(x,directBtn);});
     });
     updateEmpty();
   }
