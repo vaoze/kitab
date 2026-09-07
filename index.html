@@ -539,7 +539,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
   <div class="stats">
     <div class="stat"><b id="statKitab">9</b><span>Pelajaran Kitab Klasik</span></div>
     <div class="stat"><b id="statUmum">6</b><span>Umum &amp; Hiburan</span></div>
-    <div class="stat"><b id="statTotal">15</b><span>Total Modul Terhubung</span></div>
+    <div class="stat"><b id="statPdf">0</b><span>Koleksi PDF</span></div>
   </div>
 </section>
 
@@ -566,7 +566,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 
 
 <section class="section" id="pdf-reader" data-reveal>
-  <div class="section-head"><div><div class="kicker">03 // Perpustakaan</div><h2>Pembaca PDF</h2></div><p>Folder Perangkat · Folder Sharing · Mode Buku</p></div>
+  <div class="section-head"><div><div class="kicker">03 // Perpustakaan</div><h2>Pembaca PDF</h2></div><p>Folder Perangkat · Folder Sharing · Mode Buku · <span id="pdfCountLabel">0 PDF</span></p></div>
   <div class="pdf-reader-actions">
     <button class="btn primary" type="button" id="pdfPickFiles">＋ Tambah PDF</button>
     <button class="btn" type="button" id="pdfPickFolder">▣ Buka Folder</button>
@@ -762,8 +762,8 @@ document.getElementById('umumGrid').innerHTML=umum.map(card).join('');
 function updateModuleCounters(){
  const kitabCount=document.querySelectorAll('#kitabGrid .card').length;
  const umumCount=document.querySelectorAll('#umumGrid .card').length;
- const sk=document.getElementById('statKitab'), su=document.getElementById('statUmum'), st=document.getElementById('statTotal');
- if(sk)sk.textContent=kitabCount; if(su)su.textContent=umumCount; if(st)st.textContent=kitabCount+umumCount;
+ const sk=document.getElementById('statKitab'), su=document.getElementById('statUmum');
+ if(sk)sk.textContent=kitabCount; if(su)su.textContent=umumCount;
 }
 updateModuleCounters();
 
@@ -1467,15 +1467,26 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
       files.forEach(f=>{
         const id='drive:'+f.id;
         if(pdfEntries.some(x=>x.id===id))return;
-        pdfEntries.push({id,name:f.name,path:'Google Drive · Kitab Klasik PDF',driveId:f.id,remote:true});
+        pdfEntries.push({id,name:f.name,path:'Google Drive · Kitab Klasik PDF',driveId:f.id,remote:true,size:Number(f.size)||0});
       });
       pdfEntries.sort((a,b)=>a.name.localeCompare(b.name,'id'));
       renderCards();
     }catch(e){console.warn('Tidak bisa memuat PDF dari Google Drive:',e);}
   }
+  const PDF_LARGE_THRESHOLD=95*1024*1024; // ~95MB -- di atas ini Google sering menolak pratinjau
+  function fmtSize(bytes){
+    if(!bytes)return '';
+    const mb=bytes/(1024*1024);
+    return mb>=1024?(mb/1024).toFixed(2)+' GB':mb.toFixed(1)+' MB';
+  }
 
   function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-  function updateEmpty(){empty.style.display=pdfEntries.length?'none':'block'}
+  function updateEmpty(){
+    empty.style.display=pdfEntries.length?'none':'block';
+    const label=document.getElementById('pdfCountLabel'), stat=document.getElementById('statPdf');
+    if(label)label.textContent=pdfEntries.length+' PDF';
+    if(stat)stat.textContent=pdfEntries.length;
+  }
   function saveMeta(){try{localStorage.setItem(STORAGE,JSON.stringify(pdfEntries.map(x=>({id:x.id,name:x.name,path:x.path||''}))))}catch(e){}}
   function idFor(file){return (file.webkitRelativePath||file.name)+'|'+file.size+'|'+file.lastModified}
 
@@ -1490,22 +1501,74 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
     renderCards();saveMeta();
   }
 
+  /* === Buka langsung file besar (>100MB) yang ditolak pratinjau Google ===
+     "/preview" Google Drive punya batas ukuran; di atas itu muncul pesan
+     "Sorry, we're unable to preview this file." Untuk kasus ini, PDF diambil
+     langsung lewat Drive API (pakai token dari Apps Script yang sama, bukan
+     API key baru) lalu dibuka dengan pembaca buku/scroll lokal yang sudah ada
+     di halaman ini -- tanpa batas ukuran preview Google sama sekali.
+     CATATAN: perlu tambahan SATU action di Apps Script yang sudah dipakai
+     (PDF_SCRIPT_URL), berikut kodenya untuk ditambahkan di project .gs:
+        else if(action==='driveToken'){
+          out={ok:true, token: ScriptApp.getOAuthToken()};
+        }
+     (taruh sejalan dengan percabangan action lain di fungsi doGet-nya). */
+  async function getDriveToken(){
+    const url=new URL(PDF_SCRIPT_URL);
+    url.searchParams.set('action','driveToken');
+    const res=await fetch(url.toString());
+    if(!res.ok)throw new Error('Apps Script merespons status '+res.status);
+    const j=await res.json();
+    if(!j||!j.ok||!j.token)throw new Error(j&&j.error?j.error:'Token akses Drive belum tersedia (action "driveToken" belum ditambahkan di Apps Script).');
+    return j.token;
+  }
+  async function openDriveDirect(x,btn){
+    const oldLabel=btn?btn.textContent:'';
+    if(btn){btn.disabled=true;btn.textContent='⏳ Memuat…';}
+    try{
+      const token=await getDriveToken();
+      const res=await fetch('https://www.googleapis.com/drive/v3/files/'+x.driveId+'?alt=media',{headers:{Authorization:'Bearer '+token}});
+      if(!res.ok)throw new Error('Gagal mengambil file dari Drive (status '+res.status+').');
+      const blob=await res.blob();
+      const file=new File([blob],x.name,{type:'application/pdf'});
+      openPdf({...x,file});
+    }catch(e){
+      console.warn('Buka langsung gagal, jatuh ke unduhan tab baru:',e);
+      window.open('https://drive.google.com/uc?id='+x.driveId+'&export=download','_blank','noopener');
+    }finally{
+      if(btn){btn.disabled=false;btn.textContent=oldLabel||'⬇ Langsung';}
+    }
+  }
+
   function renderCards(){
-    grid.innerHTML=pdfEntries.map((x,i)=>`<button class="card pdf-card" type="button" data-pdf-id="${esc(x.id)}">
+    grid.innerHTML=pdfEntries.map((x,i)=>{
+      const isLarge=x.remote&&x.size>PDF_LARGE_THRESHOLD;
+      const sizeLabel=x.remote&&x.size?fmtSize(x.size):'';
+      return `<div class="card pdf-card" data-pdf-id="${esc(x.id)}">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
-      <div class="card-top"><span class="num">PDF ${String(i+1).padStart(2,'0')}</span><span class="badge">${x.remote?'PDF · DRIVE':'PDF'}</span></div>
+      <div class="card-top"><span class="num">PDF ${String(i+1).padStart(2,'0')}</span><span class="badge">${x.remote?(isLarge?'PDF · BESAR':'PDF · DRIVE'):'PDF'}</span></div>
       <div class="icon">PDF</div>
-      <div class="card-body"><h3>${esc(x.name.replace(/\.pdf$/i,''))}</h3><p>${x.remote?'Kitab PDF dari koleksi Google Drive, dibuka langsung di jendela modul.':'Pembaca PDF VAOZEE dengan mode scroll biasa atau mode buku halaman per halaman.'}</p><div class="pdf-meta">${esc(x.path||x.name)}</div></div>
-      <div class="card-bottom"><span class="path">${esc(x.name)}</span><span class="open">${x.remote?'Baca PDF →':'Buka PDF →'}</span></div>
-    </button>`).join('');
-    grid.querySelectorAll('.pdf-card').forEach(btn=>btn.addEventListener('click',()=>{
-      const x=pdfEntries.find(y=>y.id===btn.dataset.pdfId); if(!x)return;
+      <div class="card-body"><h3>${esc(x.name.replace(/\.pdf$/i,''))}</h3><p>${x.remote?(isLarge?'File berukuran besar ('+esc(sizeLabel)+') -- otomatis dibuka lewat jalur langsung, bukan pratinjau Google.':'Kitab PDF dari koleksi Google Drive, dibuka langsung di jendela modul.'):'Pembaca PDF VAOZEE dengan mode scroll biasa atau mode buku halaman per halaman.'}</p><div class="pdf-meta">${esc(x.path||x.name)}${sizeLabel?' · '+esc(sizeLabel):''}</div></div>
+      <div class="card-bottom"><span class="path">${esc(x.name)}</span><span class="open" data-pdf-open>${x.remote?(isLarge?'⚡ Buka Langsung →':'Baca PDF →'):'Buka PDF →'}</span>${x.remote&&!isLarge?`<button type="button" class="btn" style="padding:4px 9px;font-size:.62rem;margin-left:6px" data-pdf-direct title="Kalau pratinjau gagal karena file besar (&gt;100MB), pakai tombol ini">⬇ Langsung</button>`:''}</div>
+    </div>`;
+    }).join('');
+    grid.querySelectorAll('.pdf-card').forEach(card=>{
+      const x=pdfEntries.find(y=>y.id===card.dataset.pdfId); if(!x)return;
+      const isLarge=x.remote&&x.size>PDF_LARGE_THRESHOLD;
       /* PDF dari Google Drive dibaca lewat iframe modul yang sama persis
          dengan modul lain (openModule + #frame) -- bukan viewer buku/scroll
-         khusus, yang tetap dipakai hanya untuk PDF lokal di perangkat. */
-      if(x.remote)openModule('https://drive.google.com/file/d/'+x.driveId+'/preview',x.name.replace(/\.pdf$/i,''));
-      else openPdf(x);
-    }));
+         khusus, yang tetap dipakai hanya untuk PDF lokal di perangkat.
+         KECUALI file yang diketahui besar (>~95MB): itu langsung diarahkan
+         ke jalur "buka langsung" karena Google pasti menolak pratinjaunya. */
+      card.addEventListener('click',(e)=>{
+        if(e.target.closest('[data-pdf-direct]'))return;
+        if(x.remote&&isLarge)openDriveDirect(x,card.querySelector('[data-pdf-open]'));
+        else if(x.remote)openModule('https://drive.google.com/file/d/'+x.driveId+'/preview',x.name.replace(/\.pdf$/i,''));
+        else openPdf(x);
+      });
+      const directBtn=card.querySelector('[data-pdf-direct]');
+      if(directBtn)directBtn.addEventListener('click',(e)=>{e.stopPropagation();openDriveDirect(x,directBtn);});
+    });
     updateEmpty();
   }
 
