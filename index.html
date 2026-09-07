@@ -1443,6 +1443,37 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
   let pdfEntries=[];
   let activePdf=null, activeDoc=null, activeSpread=1, pdfLibPromise=null, gesture=null, suppressBookClickUntil=0;
 
+  /* === Sumber PDF dari Google Drive (folder "Kitab Klasik PDF") ===
+     Memakai Apps Script Web App yang sama dengan yang dipakai modul lain
+     (mis. Buletin di RTH Desktop) -- backend ini jalan atas akun pemilik
+     Drive sendiri, jadi folder TIDAK perlu dibagikan publik, dan tidak ada
+     API key yang perlu ditaruh di halaman ini. */
+  const PDF_SCRIPT_URL="https://script.google.com/macros/s/AKfycbxKmF2MeicmWJSUhmo6sAK4MoZujJqu4HOuJ9Mf3v3qnP0qme-NPifxidSAz-YAxDZsbA/exec";
+  const PDF_DRIVE_FOLDER_ID="1wVNHR_1hr5kG1CFluyvqBjlzdONQaR1n";
+
+  async function apiListDrivePdf(folderId){
+    const url=new URL(PDF_SCRIPT_URL);
+    url.searchParams.set('action','listAny');
+    url.searchParams.set('folderId',folderId);
+    const res=await fetch(url.toString());
+    if(!res.ok)throw new Error('Apps Script merespons status '+res.status);
+    return res.json();
+  }
+  async function loadDriveEntries(){
+    try{
+      const r=await apiListDrivePdf(PDF_DRIVE_FOLDER_ID);
+      if(!r||!r.ok){console.warn('Gagal memuat daftar PDF dari Google Drive:',r&&r.error);return}
+      const files=(r.files||[]).filter(f=>f.kind!=='folder'&&((f.mimeType||'').includes('pdf')||/\.pdf$/i.test(f.name||'')));
+      files.forEach(f=>{
+        const id='drive:'+f.id;
+        if(pdfEntries.some(x=>x.id===id))return;
+        pdfEntries.push({id,name:f.name,path:'Google Drive · Kitab Klasik PDF',driveId:f.id,remote:true});
+      });
+      pdfEntries.sort((a,b)=>a.name.localeCompare(b.name,'id'));
+      renderCards();
+    }catch(e){console.warn('Tidak bisa memuat PDF dari Google Drive:',e);}
+  }
+
   function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
   function updateEmpty(){empty.style.display=pdfEntries.length?'none':'block'}
   function saveMeta(){try{localStorage.setItem(STORAGE,JSON.stringify(pdfEntries.map(x=>({id:x.id,name:x.name,path:x.path||''}))))}catch(e){}}
@@ -1462,13 +1493,18 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
   function renderCards(){
     grid.innerHTML=pdfEntries.map((x,i)=>`<button class="card pdf-card" type="button" data-pdf-id="${esc(x.id)}">
       <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
-      <div class="card-top"><span class="num">PDF ${String(i+1).padStart(2,'0')}</span><span class="badge">PDF</span></div>
+      <div class="card-top"><span class="num">PDF ${String(i+1).padStart(2,'0')}</span><span class="badge">${x.remote?'PDF · DRIVE':'PDF'}</span></div>
       <div class="icon">PDF</div>
-      <div class="card-body"><h3>${esc(x.name.replace(/\.pdf$/i,''))}</h3><p>Pembaca PDF VAOZEE dengan mode scroll biasa atau mode buku halaman per halaman.</p><div class="pdf-meta">${esc(x.path||x.name)}</div></div>
-      <div class="card-bottom"><span class="path">${esc(x.name)}</span><span class="open">Buka PDF →</span></div>
+      <div class="card-body"><h3>${esc(x.name.replace(/\.pdf$/i,''))}</h3><p>${x.remote?'Kitab PDF dari koleksi Google Drive, dibuka langsung di jendela modul.':'Pembaca PDF VAOZEE dengan mode scroll biasa atau mode buku halaman per halaman.'}</p><div class="pdf-meta">${esc(x.path||x.name)}</div></div>
+      <div class="card-bottom"><span class="path">${esc(x.name)}</span><span class="open">${x.remote?'Baca PDF →':'Buka PDF →'}</span></div>
     </button>`).join('');
     grid.querySelectorAll('.pdf-card').forEach(btn=>btn.addEventListener('click',()=>{
-      const x=pdfEntries.find(y=>y.id===btn.dataset.pdfId); if(x)openPdf(x);
+      const x=pdfEntries.find(y=>y.id===btn.dataset.pdfId); if(!x)return;
+      /* PDF dari Google Drive dibaca lewat iframe modul yang sama persis
+         dengan modul lain (openModule + #frame) -- bukan viewer buku/scroll
+         khusus, yang tetap dipakai hanya untuk PDF lokal di perangkat. */
+      if(x.remote)openModule('https://drive.google.com/file/d/'+x.driveId+'/preview',x.name.replace(/\.pdf$/i,''));
+      else openPdf(x);
     }));
     updateEmpty();
   }
@@ -1822,6 +1858,7 @@ document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
 
   bindBookTouch();
   renderCards();
+  loadDriveEntries();
 })();
 </script>
 
