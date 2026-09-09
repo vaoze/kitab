@@ -184,7 +184,7 @@ h1 .gradient{background:linear-gradient(100deg,#8a5f1f,#c9972c 45%,#e3c377 85%);
 .card:hover .corner.br{transform:scale(-1,-1) scale(1.06)}
 
 /* tombol "buka di tab baru" pada tiap kotak modul -- solusi untuk peramban yang
-   tidak bisa/tidak mengizinkan tampilan iframe (lihat juga #iframeBlockedOverlay) */
+   tidak bisa/tidak mengizinkan tampilan iframe (lihat juga #iframeEscapeHint) */
 .card-newtab{position:absolute;top:12px;right:12px;z-index:3;width:28px;height:28px;border-radius:50%;
  border:1px solid rgba(179,129,44,.32);background:rgba(253,249,238,.88);color:var(--gold-deep);
  font-size:.82rem;font-weight:700;line-height:1;display:grid;place-items:center;cursor:pointer;
@@ -327,16 +327,22 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 .modal-frame-wrap.zoom-mode .zoom-hint{opacity:1}
 .modal.pdf-mode #zoomToggle{display:none!important}
 
-/* === Fallback saat iframe diblokir/tidak didukung peramban ===
-   Muncul otomatis menggantikan tampilan kosong/"page not found" ketika terdeteksi
-   modul gagal tampil di dalam iframe (mis. file lokal atau situs yang menolak
-   di-embed), sehingga pengguna langsung diarahkan membuka tab baru. */
-.iframe-blocked-overlay{position:absolute;inset:9px;z-index:8;display:none;align-items:center;justify-content:center;
- background:var(--cream);text-align:center;padding:24px}
-.iframe-blocked-overlay.show{display:flex}
-.ibo-box{max-width:360px;display:flex;flex-direction:column;align-items:center;gap:14px}
-.ibo-box p{margin:0;color:var(--ink);font-size:.86rem;line-height:1.6}
-.ibo-box .btn{text-decoration:none}
+/* === Bantuan keluar saat iframe bermasalah ===
+   Sengaja dibuat sebagai pita KECIL yang tidak menutupi iframe sama sekali (bukan
+   overlay penuh) -- supaya tidak ada risiko menutupi/menyembunyikan modul yang
+   sebenarnya berhasil tampil normal. Selalu ada juga tombol ↗ permanen di header
+   modal (#newTabQuick) dan di setiap kotak modul (.card-newtab) sebagai jalan
+   keluar langsung tanpa bergantung pada deteksi otomatis apa pun. */
+.iframe-escape-hint{position:absolute;left:50%;bottom:18px;transform:translate(-50%,14px);z-index:9;
+ display:flex;align-items:center;gap:10px;max-width:min(92%,460px);
+ background:rgba(43,32,19,.92);color:#fdf6e6;padding:10px 12px 10px 16px;border-radius:999px;
+ box-shadow:0 14px 34px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s ease}
+.iframe-escape-hint.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.iframe-escape-hint span{font-size:.72rem;font-weight:600;line-height:1.3}
+.iframe-escape-hint .btn{padding:8px 13px;font-size:.7rem;white-space:nowrap;flex:none}
+.iframe-escape-hint .ieh-close{flex:none;width:22px;height:22px;border:0;border-radius:50%;background:rgba(255,255,255,.14);
+ color:#fdf6e6;cursor:pointer;font-size:.8rem;line-height:1;display:grid;place-items:center}
+.iframe-escape-hint .ieh-close:hover{background:rgba(255,255,255,.26)}
 
 /* Module 01-09: frame visible over the full-screen page, including all 4 existing corner artworks. */
 .module-frame-overlay{position:absolute;inset:0;z-index:4;pointer-events:none}
@@ -672,11 +678,10 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
     <div class="mf-corner bl"></div><div class="mf-corner br"></div>
   </div>
   <iframe id="frame" title="Modul VAOZEE" referrerpolicy="no-referrer"></iframe>
-  <div class="iframe-blocked-overlay" id="iframeBlockedOverlay" aria-hidden="true">
-    <div class="ibo-box">
-      <p>Peramban ini tampaknya tidak bisa menampilkan modul langsung di halaman ini (iframe diblokir/dibatasi).</p>
-      <a class="btn primary" id="iboOpenBtn" target="_blank" rel="noopener">Buka di Tab Baru ↗</a>
-    </div>
+  <div class="iframe-escape-hint" id="iframeEscapeHint" aria-hidden="true">
+    <span>Modul tidak tampil dengan benar di sini?</span>
+    <a class="btn primary" id="iboOpenBtn" target="_blank" rel="noopener">Buka di Tab Baru ↗</a>
+    <button type="button" class="ieh-close" id="iehClose" aria-label="Tutup">×</button>
   </div>
   <div class="zoom-overlay" id="zoomOverlay" aria-hidden="true"></div>
   <div class="zoom-hint">Cubit 2 jari untuk zoom · geser 1 jari untuk baca · ganda-tap / tombol 🔍 untuk keluar</div>
@@ -706,6 +711,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
           </div>
         </div>
         <button class="icon-btn fs-btn" id="fsBtnModal" title="Layar penuh">⛶</button>
+        <a class="icon-btn" id="newTabQuick" target="_blank" rel="noopener" title="Buka modul ini di tab baru" aria-label="Buka modul ini di tab baru">↗</a>
         <button class="icon-btn danger" id="closeModal" title="Tutup">×</button>
       </div>
     </div>
@@ -834,75 +840,48 @@ function updateModuleCounters(){
 updateModuleCounters();
 
 /* ---- fullscreen module viewer ---- */
-const modal=document.getElementById('modal'), frame=document.getElementById('frame'), modalTitle=document.getElementById('modalTitle'), newTab=document.getElementById('newTab'), loader=document.getElementById('loader');
-const iframeBlockedOverlay=document.getElementById('iframeBlockedOverlay'), iboOpenBtn=document.getElementById('iboOpenBtn');
+const modal=document.getElementById('modal'), frame=document.getElementById('frame'), modalTitle=document.getElementById('modalTitle'), newTab=document.getElementById('newTab'), newTabQuick=document.getElementById('newTabQuick'), loader=document.getElementById('loader');
+const iframeEscapeHint=document.getElementById('iframeEscapeHint'), iboOpenBtn=document.getElementById('iboOpenBtn'), iehClose=document.getElementById('iehClose');
 
-/* === Deteksi iframe yang diblokir/tidak didukung peramban ===
-   Masalahnya: kalau sebuah iframe ditolak (mis. file lokal/file:// yang tidak
-   boleh memuat file lokal lain, atau situs yang memasang X-Frame-Options/CSP
-   frame-ancestors), event 'error' pada elemen <iframe> TIDAK ikut terpicu --
-   yang terjadi hanyalah 'load' seperti biasa, hanya saja navigasinya batal
-   dan iframe diam-diam tertinggal di about:blank (kelihatan seperti "page not
-   found" oleh pengguna). Karena itu deteksi 'error' saja tidak cukup.
-
-   PENTING (revisi setelah dilaporkan bikin modul yang SEBENARNYA berhasil ikut
-   ditolak): sinyal yang dipakai HARUS document.URL milik iframe, BUKAN isi
-   body-nya. Banyak modul di sini adalah halaman berat (font, PDF.js, animasi)
-   yang body-nya masih kosong sesaat sesudah 'load' lalu terisi belakangan lewat
-   JS -- kalau dicek dari isi body, itu keliru dianggap "gagal". Padahal begitu
-   sebuah navigasi benar-benar berhasil dimulai, document.URL SUDAH berubah ke
-   URL tujuan walau kontennya belum sempat dirender -- baru dianggap gagal kalau
-   document-nya tetap tertahan di about:blank padahal kita jelas-jelas menyuruh
-   iframe pindah ke URL lain.
-   Ini juga hanya bisa diperiksa kalau dokumennya same-origin terhadap dashboard.
-   Kalau modul online berbeda origin, membaca contentDocument akan gagal
-   (SecurityError) -- itu kita anggap AMAN/berhasil, supaya modul yang memang
-   tampil normal tidak ikut ditolak secara keliru. */
-function iframeContentLooksBlocked(fr,expectedUrl){
- try{
-   const doc=fr.contentDocument;
-   if(!doc)return true;
-   const docUrl=doc.URL||(doc.location&&doc.location.href)||'';
-   if(docUrl==='about:blank'&&expectedUrl&&expectedUrl!=='about:blank')return true;
-   return false;
- }catch(e){
-   return false; // lintas-origin sungguhan: tidak bisa diperiksa, anggap baik-baik saja
- }
+/* === Jalan keluar kalau iframe bermasalah ===
+   CATATAN PENTING (setelah dua kali dicoba dan ternyata malah merusak modul yang
+   sebenarnya berhasil tampil): membaca isi/URL dokumen di dalam iframe untuk
+   "menebak" apakah navigasinya diblokir TERNYATA TIDAK BISA diandalkan -- banyak
+   modul di sini adalah halaman berat yang kontennya baru terisi belakangan lewat
+   JS, dan cara membaca dokumen iframe lewat JS punya banyak kasus tepi yang beda
+   di tiap peramban/perangkat. Menebak salah lalu memaksa iframe pindah ke sumber
+   lain justru menyebabkan modul yang tadinya berhasil ikut rusak / muncul "page
+   not found" sungguhan.
+   Karena itu pendekatannya diubah total: TIDAK ADA lagi pemeriksaan otomatis
+   yang membaca isi iframe atau memaksa iframe pindah alamat sendiri. Sebagai
+   gantinya disediakan jalan keluar yang selalu berhasil dan tidak pernah salah
+   duga:
+   1) Tombol ↗ permanen di setiap kotak modul (.card-newtab) dan di header modal
+      (#newTabQuick) -- klik kapan saja, tidak bergantung pada deteksi apa pun.
+   2) Event 'error' bawaan iframe (dipicu peramban sendiri untuk kegagalan
+      jaringan yang nyata) tetap ditangani -- ini sinyal asli dari peramban,
+      bukan tebakan kita.
+   3) Pita kecil "Modul tidak tampil dengan benar?" muncul otomatis beberapa
+      detik setelah modul dibuka, TANPA menutupi iframe dan TANPA memindahkan
+      src iframe sama sekali -- murni ajakan, pengguna sendiri yang menilai lalu
+      klik kalau memang perlu. Kalau modulnya berhasil tampil, pita ini tidak
+      mengganggu apa pun dan bisa ditutup. */
+function hideEscapeHint(){
+ if(!iframeEscapeHint)return;
+ iframeEscapeHint.classList.remove('show');
+ iframeEscapeHint.setAttribute('aria-hidden','true');
 }
-function hideIframeBlockedFallback(){
- if(!iframeBlockedOverlay)return;
- iframeBlockedOverlay.classList.remove('show');
- iframeBlockedOverlay.setAttribute('aria-hidden','true');
-}
-function showIframeBlockedFallback(url){
- if(!iframeBlockedOverlay||!iboOpenBtn)return;
+function scheduleEscapeHint(url){
+ clearTimeout(frame._escapeHintTimer);
+ if(!iframeEscapeHint||!iboOpenBtn)return;
  iboOpenBtn.href=url;
- iframeBlockedOverlay.classList.add('show');
- iframeBlockedOverlay.setAttribute('aria-hidden','false');
- loader.classList.add('done');
- /* Coba langsung buka tab baru secara otomatis (best-effort). Catatan: karena ini
-    dipicu dari timer/event 'load', bukan langsung dari klik pengguna, sebagian
-    peramban akan memblokirnya sebagai popup -- karena itu tombol manual di atas
-    selalu tetap ditampilkan sebagai jalan pasti. */
- try{window.open(url,'_blank','noopener')}catch(e){}
+ frame._escapeHintTimer=setTimeout(()=>{
+   iframeEscapeHint.classList.add('show');
+   iframeEscapeHint.setAttribute('aria-hidden','false');
+ },4500);
 }
-function handleFrameLoadCheck(expectedUrl){
- const local=frame.dataset.fallbackLocal;
- const current=frame.src;
- if(!current||current==='about:blank')return;
- if(!iframeContentLooksBlocked(frame,expectedUrl||current))return;
- if(local){
-   let resolvedLocal='';
-   try{resolvedLocal=new URL(local,location.href).href}catch(e){}
-   if(resolvedLocal&&current!==resolvedLocal){
-     /* Masih ada versi offline yang belum dicoba -- coba dulu sebelum menyerah ke tab baru. */
-     frame.dataset.fallbackLocal='';
-     frame.src=local;
-     return;
-   }
- }
- showIframeBlockedFallback(current);
-}
+iehClose&&iehClose.addEventListener('click',hideEscapeHint);
+
 function openModule(url,title,fromHistory=false,localUrl=''){
  const onlineUrl=dashboardValidUrl(url);
  const offlineUrl=localUrl||'';
@@ -917,7 +896,7 @@ function openModule(url,title,fromHistory=false,localUrl=''){
     tetap berdiri sendiri, hanya "ditonton" lewat src iframe (relatif ke folder ini
     untuk file offline, atau URL penuh untuk yang online). */
  function show(target,usedOnline){
-   hideIframeBlockedFallback();
+   hideEscapeHint();
    /* Batalkan timer "kosongkan iframe" tertunda dari closeModule() sebelumnya --
       kalau tidak, modul yang baru saja dibuka bisa tiba-tiba dikosongkan lagi. */
    clearTimeout(frame._closeBlankTimer);
@@ -928,20 +907,9 @@ function openModule(url,title,fromHistory=false,localUrl=''){
    let resolvedTarget=target;
    try{resolvedTarget=new URL(target,location.href).href}catch(e){}
    if(frame.src===resolvedTarget){
-     /* Langkah "kosongkan dulu ke about:blank" ini hanya trik supaya browser mau
-        navigasi ulang -- BUKAN navigasi sungguhan ke modul. Event 'load' yang
-        dipicu tahap ini harus diabaikan oleh pemeriksa iframe-blocked, kalau
-        tidak dokumen about:blank sesaat ini akan salah dikira "navigasi gagal". */
-     frame._suppressBlockCheck=true;
      frame.src='about:blank';
-     requestAnimationFrame(()=>{
-       frame._suppressBlockCheck=false;
-       frame.dataset.expectedTarget=resolvedTarget;
-       frame.src=target;
-     });
+     requestAnimationFrame(()=>{frame.src=target});
    }else{
-     frame._suppressBlockCheck=false;
-     frame.dataset.expectedTarget=resolvedTarget;
      frame.src=target;
    }
    frame.dataset.fallbackLocal=usedOnline?offlineUrl:'';
@@ -949,6 +917,8 @@ function openModule(url,title,fromHistory=false,localUrl=''){
    if(window.vaozeeResetZoomMode)window.vaozeeResetZoomMode();
    modalTitle.textContent=title;
    newTab.href=target;
+   if(newTabQuick)newTabQuick.href=target;
+   scheduleEscapeHint(target);
    modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
 
    const modalCapsule=document.querySelector('.modal-capsule'), miniModalBtn=document.getElementById('miniModal');
@@ -987,20 +957,18 @@ function closeModule(fromPopState=false){
  if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
  clearTimeout(frame._closeBlankTimer);
  frame._closeBlankTimer=setTimeout(()=>{frame.src='about:blank'},220);
- clearTimeout(frame._blockedCheckTimer);
- hideIframeBlockedFallback();
+ clearTimeout(frame._escapeHintTimer);
+ hideEscapeHint();
  document.body.style.overflow='';
  if(window.vaozeeResetZoomMode)window.vaozeeResetZoomMode();
  if(!fromPopState && history.state && history.state.vaozeeModule) history.back();
 }
 frame.addEventListener('load',()=>{
   loader.classList.add('done');frame.dataset.loaded='1';clearTimeout(frame._fallbackTimer);
-  if(frame._suppressBlockCheck)return; // load ini cuma tahap reset ke about:blank, bukan navigasi ke modul
-  clearTimeout(frame._blockedCheckTimer);
-  const expected=frame.dataset.expectedTarget;
-  frame._blockedCheckTimer=setTimeout(()=>handleFrameLoadCheck(expected),200);
 });
 frame.addEventListener('error',()=>{
+  /* Sinyal asli dari peramban (bukan tebakan kita) bahwa navigasi iframe gagal
+     total -- mis. file lokal yang benar-benar tidak ada. */
   const local=frame.dataset.fallbackLocal;
   let resolvedLocal='';
   try{resolvedLocal=new URL(local||'',location.href).href}catch(e){}
@@ -1008,7 +976,14 @@ frame.addEventListener('error',()=>{
     frame.dataset.fallbackLocal='';
     frame.src=local;
   }else{
-    showIframeBlockedFallback(frame.src);
+    /* Tidak ada sumber lain yang bisa dicoba -- segera tawarkan jalan keluar
+       (bukan menunggu 4.5 detik seperti biasanya) karena ini kegagalan nyata. */
+    clearTimeout(frame._escapeHintTimer);
+    if(iframeEscapeHint&&iboOpenBtn){
+      iboOpenBtn.href=frame.src;
+      iframeEscapeHint.classList.add('show');
+      iframeEscapeHint.setAttribute('aria-hidden','false');
+    }
   }
 });
 document.querySelectorAll('.card').forEach(c=>c.addEventListener('click',e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button===1)return;e.preventDefault();openModule(c.dataset.url,c.dataset.title,false,c.dataset.localUrl)}));
