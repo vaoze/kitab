@@ -841,29 +841,32 @@ const iframeBlockedOverlay=document.getElementById('iframeBlockedOverlay'), iboO
    Masalahnya: kalau sebuah iframe ditolak (mis. file lokal/file:// yang tidak
    boleh memuat file lokal lain, atau situs yang memasang X-Frame-Options/CSP
    frame-ancestors), event 'error' pada elemen <iframe> TIDAK ikut terpicu --
-   yang terjadi hanyalah 'load' seperti biasa, hanya saja isinya kosong/halaman
-   error bawaan peramban (kelihatan seperti "page not found" oleh pengguna).
-   Karena itu deteksi 'error' saja tidak cukup.
-   Trik yang dipakai di sini: sesaat setelah 'load', coba baca contentDocument
-   iframe. Ini HANYA berhasil kalau dokumennya same-origin terhadap dashboard --
-   dan pada kasus blokir di atas, dokumen yang berhasil dimuat justru sering
-   berakhir sebagai about:blank/dokumen kosong same-origin (bukan dokumen situs
-   tujuan yang sesungguhnya lintas-origin). Jika ternyata bisa dibaca dan
-   isinya kosong -> anggap gagal. Jika dokumennya lintas-origin asli (situs lain
-   berhasil tampil), membaca contentDocument akan gagal (SecurityError) --
-   itu kita anggap AMAN/berhasil, supaya modul online yang memang tampil normal
-   tidak ikut ditolak secara keliru. */
-function iframeContentLooksBlocked(fr){
+   yang terjadi hanyalah 'load' seperti biasa, hanya saja navigasinya batal
+   dan iframe diam-diam tertinggal di about:blank (kelihatan seperti "page not
+   found" oleh pengguna). Karena itu deteksi 'error' saja tidak cukup.
+
+   PENTING (revisi setelah dilaporkan bikin modul yang SEBENARNYA berhasil ikut
+   ditolak): sinyal yang dipakai HARUS document.URL milik iframe, BUKAN isi
+   body-nya. Banyak modul di sini adalah halaman berat (font, PDF.js, animasi)
+   yang body-nya masih kosong sesaat sesudah 'load' lalu terisi belakangan lewat
+   JS -- kalau dicek dari isi body, itu keliru dianggap "gagal". Padahal begitu
+   sebuah navigasi benar-benar berhasil dimulai, document.URL SUDAH berubah ke
+   URL tujuan walau kontennya belum sempat dirender -- baru dianggap gagal kalau
+   document-nya tetap tertahan di about:blank padahal kita jelas-jelas menyuruh
+   iframe pindah ke URL lain.
+   Ini juga hanya bisa diperiksa kalau dokumennya same-origin terhadap dashboard.
+   Kalau modul online berbeda origin, membaca contentDocument akan gagal
+   (SecurityError) -- itu kita anggap AMAN/berhasil, supaya modul yang memang
+   tampil normal tidak ikut ditolak secara keliru. */
+function iframeContentLooksBlocked(fr,expectedUrl){
  try{
    const doc=fr.contentDocument;
    if(!doc)return true;
-   if(doc.location&&doc.location.href==='about:blank')return true;
-   const body=doc.body;
-   if(!body)return true;
-   const txt=(body.innerText||body.textContent||'').trim();
-   return body.children.length===0&&txt.length<2;
+   const docUrl=doc.URL||(doc.location&&doc.location.href)||'';
+   if(docUrl==='about:blank'&&expectedUrl&&expectedUrl!=='about:blank')return true;
+   return false;
  }catch(e){
-   return false; // lintas-origin: tidak bisa diperiksa, anggap baik-baik saja
+   return false; // lintas-origin sungguhan: tidak bisa diperiksa, anggap baik-baik saja
  }
 }
 function hideIframeBlockedFallback(){
@@ -883,11 +886,11 @@ function showIframeBlockedFallback(url){
     selalu tetap ditampilkan sebagai jalan pasti. */
  try{window.open(url,'_blank','noopener')}catch(e){}
 }
-function handleFrameLoadCheck(){
+function handleFrameLoadCheck(expectedUrl){
  const local=frame.dataset.fallbackLocal;
  const current=frame.src;
  if(!current||current==='about:blank')return;
- if(!iframeContentLooksBlocked(frame))return;
+ if(!iframeContentLooksBlocked(frame,expectedUrl||current))return;
  if(local){
    let resolvedLocal='';
    try{resolvedLocal=new URL(local,location.href).href}catch(e){}
@@ -925,9 +928,20 @@ function openModule(url,title,fromHistory=false,localUrl=''){
    let resolvedTarget=target;
    try{resolvedTarget=new URL(target,location.href).href}catch(e){}
    if(frame.src===resolvedTarget){
+     /* Langkah "kosongkan dulu ke about:blank" ini hanya trik supaya browser mau
+        navigasi ulang -- BUKAN navigasi sungguhan ke modul. Event 'load' yang
+        dipicu tahap ini harus diabaikan oleh pemeriksa iframe-blocked, kalau
+        tidak dokumen about:blank sesaat ini akan salah dikira "navigasi gagal". */
+     frame._suppressBlockCheck=true;
      frame.src='about:blank';
-     requestAnimationFrame(()=>{frame.src=target});
+     requestAnimationFrame(()=>{
+       frame._suppressBlockCheck=false;
+       frame.dataset.expectedTarget=resolvedTarget;
+       frame.src=target;
+     });
    }else{
+     frame._suppressBlockCheck=false;
+     frame.dataset.expectedTarget=resolvedTarget;
      frame.src=target;
    }
    frame.dataset.fallbackLocal=usedOnline?offlineUrl:'';
@@ -981,9 +995,10 @@ function closeModule(fromPopState=false){
 }
 frame.addEventListener('load',()=>{
   loader.classList.add('done');frame.dataset.loaded='1';clearTimeout(frame._fallbackTimer);
-  /* Beri sedikit jeda supaya dokumen sempat commit sebelum diperiksa. */
+  if(frame._suppressBlockCheck)return; // load ini cuma tahap reset ke about:blank, bukan navigasi ke modul
   clearTimeout(frame._blockedCheckTimer);
-  frame._blockedCheckTimer=setTimeout(handleFrameLoadCheck,120);
+  const expected=frame.dataset.expectedTarget;
+  frame._blockedCheckTimer=setTimeout(()=>handleFrameLoadCheck(expected),200);
 });
 frame.addEventListener('error',()=>{
   const local=frame.dataset.fallbackLocal;
