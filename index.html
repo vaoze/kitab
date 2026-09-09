@@ -183,6 +183,18 @@ h1 .gradient{background:linear-gradient(100deg,#8a5f1f,#c9972c 45%,#e3c377 85%);
 .card:hover .corner.bl{transform:scaleY(-1) scale(1.06)}
 .card:hover .corner.br{transform:scale(-1,-1) scale(1.06)}
 
+/* tombol "buka di tab baru" pada tiap kotak modul -- solusi untuk peramban yang
+   tidak bisa/tidak mengizinkan tampilan iframe (lihat juga #iframeBlockedOverlay) */
+.card-newtab{position:absolute;top:12px;right:12px;z-index:3;width:28px;height:28px;border-radius:50%;
+ border:1px solid rgba(179,129,44,.32);background:rgba(253,249,238,.88);color:var(--gold-deep);
+ font-size:.82rem;font-weight:700;line-height:1;display:grid;place-items:center;cursor:pointer;
+ box-shadow:0 6px 16px rgba(90,64,20,.16);opacity:0;transform:translateY(-2px);
+ transition:opacity .18s ease,transform .18s ease,background .18s ease,border-color .18s ease}
+.card:hover .card-newtab,.card:focus-within .card-newtab{opacity:1;transform:translateY(0)}
+.card-newtab:hover,.card-newtab:focus-visible{background:var(--gold);color:#fdf6e6;border-color:transparent;outline:none}
+@media(hover:none){.card-newtab{opacity:1;transform:none}}
+.grid.compact .card-newtab{top:auto;bottom:8px;right:8px;width:22px;height:22px;font-size:.68rem}
+
 .divider{display:flex;align-items:center;gap:14px;margin:30px 0}
 .divider .dline{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent)}
 .divider .gem{width:7px;height:7px;background:var(--gold);transform:rotate(45deg);box-shadow:0 0 0 4px rgba(179,129,44,.1);flex:none}
@@ -315,6 +327,16 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 .modal-frame-wrap.zoom-mode .zoom-hint{opacity:1}
 .modal.pdf-mode #zoomToggle{display:none!important}
 
+/* === Fallback saat iframe diblokir/tidak didukung peramban ===
+   Muncul otomatis menggantikan tampilan kosong/"page not found" ketika terdeteksi
+   modul gagal tampil di dalam iframe (mis. file lokal atau situs yang menolak
+   di-embed), sehingga pengguna langsung diarahkan membuka tab baru. */
+.iframe-blocked-overlay{position:absolute;inset:9px;z-index:8;display:none;align-items:center;justify-content:center;
+ background:var(--cream);text-align:center;padding:24px}
+.iframe-blocked-overlay.show{display:flex}
+.ibo-box{max-width:360px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.ibo-box p{margin:0;color:var(--ink);font-size:.86rem;line-height:1.6}
+.ibo-box .btn{text-decoration:none}
 
 /* Module 01-09: frame visible over the full-screen page, including all 4 existing corner artworks. */
 .module-frame-overlay{position:absolute;inset:0;z-index:4;pointer-events:none}
@@ -650,6 +672,12 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
     <div class="mf-corner bl"></div><div class="mf-corner br"></div>
   </div>
   <iframe id="frame" title="Modul VAOZEE" referrerpolicy="no-referrer"></iframe>
+  <div class="iframe-blocked-overlay" id="iframeBlockedOverlay" aria-hidden="true">
+    <div class="ibo-box">
+      <p>Peramban ini tampaknya tidak bisa menampilkan modul langsung di halaman ini (iframe diblokir/dibatasi).</p>
+      <a class="btn primary" id="iboOpenBtn" target="_blank" rel="noopener">Buka di Tab Baru ↗</a>
+    </div>
+  </div>
   <div class="zoom-overlay" id="zoomOverlay" aria-hidden="true"></div>
   <div class="zoom-hint">Cubit 2 jari untuk zoom · geser 1 jari untuk baca · ganda-tap / tombol 🔍 untuk keluar</div>
   <div class="pdf-scroll-stage" id="pdfScrollStage" aria-hidden="true"><div class="pdf-scroll-pages" id="pdfScrollPages"></div></div>
@@ -772,14 +800,30 @@ function card(x,dispN){
  const sourceLabel=online?'ONLINE':'OFFLINE';
  return `<a href="${escAttr(href)}" class="card" data-url="${escAttr(online)}" data-local-url="${escAttr(local)}" data-title="${escAttr(x.title)}" data-cat="${escAttr(x.cat||'umum')}" data-n="${escAttr(x.n)}" data-source="${sourceLabel}">
    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+   <button type="button" class="card-newtab" data-newtab-url="${escAttr(href)}" title="Buka modul ini di tab baru" aria-label="Buka modul ini di tab baru">↗</button>
    <div class="card-top"><span class="num">MODUL ${shown}</span><span class="badge">${x.badge}</span></div>
    <div class="icon">${x.icon}</div>
    <div class="card-body"><h3>${x.title}</h3><p>${x.desc}</p></div>
    <div class="card-bottom"><span class="path">${online?(new URL(online).pathname.replaceAll('/','')||'/'):local}</span><span class="open">${online&&local?'Online / Offline →':'Buka →'}</span></div>
  </a>`;
 }
+/* Tombol ↗ di pojok kotak modul: buka URL modul langsung di tab baru peramban,
+   tanpa lewat iframe sama sekali -- jalan pintas untuk peramban yang iframe-nya
+   diblokir/dibatasi. stopPropagation dipasang di elemen tombolnya sendiri
+   (bukan lewat delegasi ke dokumen) supaya event berhenti SEBELUM sempat
+   membuka modal iframe milik kartu (anchor) yang membungkusnya. */
+function bindCardNewTabButtons(root){
+ (root||document).querySelectorAll('.card-newtab').forEach(btn=>{
+   btn.addEventListener('click',e=>{
+     e.preventDefault();e.stopPropagation();
+     const url=btn.getAttribute('data-newtab-url');
+     if(url&&url!=='#')window.open(url,'_blank','noopener');
+   });
+ });
+}
 document.getElementById('kitabGrid').innerHTML=kitab.map(card).join('');
 document.getElementById('umumGrid').innerHTML=umum.map(card).join('');
+bindCardNewTabButtons();
 
 function updateModuleCounters(){
  const kitabCount=document.querySelectorAll('#kitabGrid .card').length;
@@ -791,6 +835,71 @@ updateModuleCounters();
 
 /* ---- fullscreen module viewer ---- */
 const modal=document.getElementById('modal'), frame=document.getElementById('frame'), modalTitle=document.getElementById('modalTitle'), newTab=document.getElementById('newTab'), loader=document.getElementById('loader');
+const iframeBlockedOverlay=document.getElementById('iframeBlockedOverlay'), iboOpenBtn=document.getElementById('iboOpenBtn');
+
+/* === Deteksi iframe yang diblokir/tidak didukung peramban ===
+   Masalahnya: kalau sebuah iframe ditolak (mis. file lokal/file:// yang tidak
+   boleh memuat file lokal lain, atau situs yang memasang X-Frame-Options/CSP
+   frame-ancestors), event 'error' pada elemen <iframe> TIDAK ikut terpicu --
+   yang terjadi hanyalah 'load' seperti biasa, hanya saja isinya kosong/halaman
+   error bawaan peramban (kelihatan seperti "page not found" oleh pengguna).
+   Karena itu deteksi 'error' saja tidak cukup.
+   Trik yang dipakai di sini: sesaat setelah 'load', coba baca contentDocument
+   iframe. Ini HANYA berhasil kalau dokumennya same-origin terhadap dashboard --
+   dan pada kasus blokir di atas, dokumen yang berhasil dimuat justru sering
+   berakhir sebagai about:blank/dokumen kosong same-origin (bukan dokumen situs
+   tujuan yang sesungguhnya lintas-origin). Jika ternyata bisa dibaca dan
+   isinya kosong -> anggap gagal. Jika dokumennya lintas-origin asli (situs lain
+   berhasil tampil), membaca contentDocument akan gagal (SecurityError) --
+   itu kita anggap AMAN/berhasil, supaya modul online yang memang tampil normal
+   tidak ikut ditolak secara keliru. */
+function iframeContentLooksBlocked(fr){
+ try{
+   const doc=fr.contentDocument;
+   if(!doc)return true;
+   if(doc.location&&doc.location.href==='about:blank')return true;
+   const body=doc.body;
+   if(!body)return true;
+   const txt=(body.innerText||body.textContent||'').trim();
+   return body.children.length===0&&txt.length<2;
+ }catch(e){
+   return false; // lintas-origin: tidak bisa diperiksa, anggap baik-baik saja
+ }
+}
+function hideIframeBlockedFallback(){
+ if(!iframeBlockedOverlay)return;
+ iframeBlockedOverlay.classList.remove('show');
+ iframeBlockedOverlay.setAttribute('aria-hidden','true');
+}
+function showIframeBlockedFallback(url){
+ if(!iframeBlockedOverlay||!iboOpenBtn)return;
+ iboOpenBtn.href=url;
+ iframeBlockedOverlay.classList.add('show');
+ iframeBlockedOverlay.setAttribute('aria-hidden','false');
+ loader.classList.add('done');
+ /* Coba langsung buka tab baru secara otomatis (best-effort). Catatan: karena ini
+    dipicu dari timer/event 'load', bukan langsung dari klik pengguna, sebagian
+    peramban akan memblokirnya sebagai popup -- karena itu tombol manual di atas
+    selalu tetap ditampilkan sebagai jalan pasti. */
+ try{window.open(url,'_blank','noopener')}catch(e){}
+}
+function handleFrameLoadCheck(){
+ const local=frame.dataset.fallbackLocal;
+ const current=frame.src;
+ if(!current||current==='about:blank')return;
+ if(!iframeContentLooksBlocked(frame))return;
+ if(local){
+   let resolvedLocal='';
+   try{resolvedLocal=new URL(local,location.href).href}catch(e){}
+   if(resolvedLocal&&current!==resolvedLocal){
+     /* Masih ada versi offline yang belum dicoba -- coba dulu sebelum menyerah ke tab baru. */
+     frame.dataset.fallbackLocal='';
+     frame.src=local;
+     return;
+   }
+ }
+ showIframeBlockedFallback(current);
+}
 function openModule(url,title,fromHistory=false,localUrl=''){
  const onlineUrl=dashboardValidUrl(url);
  const offlineUrl=localUrl||'';
@@ -805,6 +914,7 @@ function openModule(url,title,fromHistory=false,localUrl=''){
     tetap berdiri sendiri, hanya "ditonton" lewat src iframe (relatif ke folder ini
     untuk file offline, atau URL penuh untuk yang online). */
  function show(target,usedOnline){
+   hideIframeBlockedFallback();
    /* Batalkan timer "kosongkan iframe" tertunda dari closeModule() sebelumnya --
       kalau tidak, modul yang baru saja dibuka bisa tiba-tiba dikosongkan lagi. */
    clearTimeout(frame._closeBlankTimer);
@@ -863,15 +973,27 @@ function closeModule(fromPopState=false){
  if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
  clearTimeout(frame._closeBlankTimer);
  frame._closeBlankTimer=setTimeout(()=>{frame.src='about:blank'},220);
+ clearTimeout(frame._blockedCheckTimer);
+ hideIframeBlockedFallback();
  document.body.style.overflow='';
  if(window.vaozeeResetZoomMode)window.vaozeeResetZoomMode();
  if(!fromPopState && history.state && history.state.vaozeeModule) history.back();
 }
-frame.addEventListener('load',()=>{loader.classList.add('done');frame.dataset.loaded='1';clearTimeout(frame._fallbackTimer)});
+frame.addEventListener('load',()=>{
+  loader.classList.add('done');frame.dataset.loaded='1';clearTimeout(frame._fallbackTimer);
+  /* Beri sedikit jeda supaya dokumen sempat commit sebelum diperiksa. */
+  clearTimeout(frame._blockedCheckTimer);
+  frame._blockedCheckTimer=setTimeout(handleFrameLoadCheck,120);
+});
 frame.addEventListener('error',()=>{
   const local=frame.dataset.fallbackLocal;
-  if(local && frame.src!==new URL(local,location.href).href){
+  let resolvedLocal='';
+  try{resolvedLocal=new URL(local||'',location.href).href}catch(e){}
+  if(local && frame.src!==resolvedLocal){
+    frame.dataset.fallbackLocal='';
     frame.src=local;
+  }else{
+    showIframeBlockedFallback(frame.src);
   }
 });
 document.querySelectorAll('.card').forEach(c=>c.addEventListener('click',e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button===1)return;e.preventDefault();openModule(c.dataset.url,c.dataset.title,false,c.dataset.localUrl)}));
@@ -1300,6 +1422,7 @@ if('IntersectionObserver' in window){
     [...kitabGrid.querySelectorAll('.card'),...umumGrid.querySelectorAll('.card')].forEach(c=>{
       c.addEventListener('click',e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button===1)return;e.preventDefault();openModule(c.dataset.url,c.dataset.title,false,c.dataset.localUrl)});
     });
+    if(window.bindCardNewTabButtons)window.bindCardNewTabButtons();
     apply();updateModuleCounters();
   }
 
