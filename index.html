@@ -290,6 +290,10 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 .tools-menu .menu-item:hover{background:rgba(179,129,44,.12);color:var(--gold-deep)}
 .tools-menu .menu-item.active{background:rgba(179,129,44,.16);color:var(--gold-deep)}
 .tools-menu-label{padding:6px 11px 7px;font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-deep)}
+/* "Buka di Tab Baru" sudah ada sebagai tombol ↗ langsung di header (#newTabQuick) --
+   item yang sama di dalam droplist ini disembunyikan supaya tidak dobel. Elemennya
+   tetap ada di HTML (JS masih mengisi href-nya) hanya disembunyikan dari tampilan. */
+#toolsMenu #newTab{display:none!important}
 .modal.pdf-mode .tools-menu{background:rgba(24,22,18,.95);border-color:rgba(255,255,255,.14)}
 .modal.pdf-mode .tools-menu .menu-item{color:#f3ead4}
 .modal.pdf-mode .tools-menu .menu-item:hover,.modal.pdf-mode .tools-menu .menu-item.active{background:rgba(255,255,255,.12);color:#fff}
@@ -420,6 +424,10 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
   flex:none;
   max-width:calc(100vw - 92px);
 }
+/* Header modul/iframe dibuat ringkas: hanya tombol, tanpa judul halaman,
+   supaya semua tombol muat rapi dalam 1 baris. Elemen judul tetap ada di HTML
+   (JS masih mengisi teksnya) hanya disembunyikan dari tampilan. */
+.modal-capsule-left{display:none!important}
 .modal-capsule:not(.minimized) .modal-actions{
   gap:5px!important;
 }
@@ -597,7 +605,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
     <div class="filters"><button class="filter active" data-filter="all">Semua</button><button class="filter" data-filter="nahwu">Nahwu</button><button class="filter" data-filter="sharaf">Sharaf</button><button class="filter" data-filter="lain">Lainnya</button></div>
     <button class="btn" id="compactToggle" type="button" title="Ringkas/lengkapkan tampilan kotak modul">🗜 Ringkas Tampilan</button>
     <button class="btn" id="moduleManagerBtn" type="button">＋ Tambah Modul</button>
-    <span class="sync-note" id="syncNote"><span class="sdot" id="syncDot"></span><span id="syncText">Sinkron dgn Google Sheet</span></span>
+    <span class="sync-note" id="syncNote"><span class="sdot" id="syncDot"></span><span id="syncText">Daftar modul lokal</span></span>
   </div>
   <div class="grid" id="kitabGrid"></div>
   <div class="no-results" id="noResults">Tidak ada modul yang cocok dengan pencarian.</div>
@@ -635,7 +643,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
 <div class="module-manager-backdrop" id="moduleManagerBackdrop" aria-hidden="true">
   <div class="module-manager" role="dialog" aria-modal="true" aria-labelledby="moduleManagerTitle">
     <div class="module-manager-head">
-      <div><h3 id="moduleManagerTitle">Tambah Modul</h3><p>Tambahkan link modul; setelah disimpan ke Google Sheet, kotaknya otomatis muncul di halaman utama semua pengunjung.</p></div>
+      <div><h3 id="moduleManagerTitle">Tambah Modul</h3><p>Tambahkan link modul; modul tersimpan lokal di browser ini saja (localStorage), tanpa terhubung ke layanan luar apa pun.</p></div>
       <button class="module-manager-close" id="moduleManagerClose" type="button" aria-label="Tutup">×</button>
     </div>
     <form class="module-form" id="moduleForm">
@@ -662,7 +670,7 @@ iframe{border:0;width:100%;height:100%;background:#fff;display:block}
       <div class="module-form-grid">
         <label style="grid-column:1/-1">Deskripsi<input id="moduleDesc" maxlength="220" placeholder="Deskripsi singkat modul"></label>
       </div>
-      <div class="module-manager-note" id="moduleManagerNote">Nomor "MODUL XX" dibuat otomatis mengikuti urutan: 01-Kitab Klasik jadi acuan dasar, lalu 02-Umum melanjutkan nomornya — jadi kalau Kitab Klasik nambah, nomor Umum otomatis ikut bergeser. Kategori boleh dipilih dari daftar atau ketik sendiri. Setiap perubahan wajib password dan langsung tersimpan/tercatat di Google Sheet. Jika koneksi gagal, modul disimpan sementara hanya di browser ini.</div>
+      <div class="module-manager-note" id="moduleManagerNote">Nomor "MODUL XX" dibuat otomatis mengikuti urutan: 01-Kitab Klasik jadi acuan dasar, lalu 02-Umum melanjutkan nomornya — jadi kalau Kitab Klasik nambah, nomor Umum otomatis ikut bergeser. Kategori boleh dipilih dari daftar atau ketik sendiri. Setiap perubahan wajib password dan langsung tersimpan di browser ini (localStorage) -- tidak dikirim ke server/spreadsheet mana pun.</div>
       <div class="module-manager-actions"><button class="btn" type="button" id="moduleManagerCancel">Batal</button><button class="btn primary" type="submit" id="moduleSubmitBtn">Simpan Modul</button></div>
     </form>
     <div class="module-manager-list" id="moduleSavedList"></div>
@@ -735,15 +743,21 @@ const kitab=[
  {n:"13",title:"Jawahirul Kalamiyah",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Jawahirul Kalamiyah."},
  {n:"14",title:"Al-Waraqāt",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Al-Waraqāt."},
  {n:"15",title:"Mukhtashar Abi Syuja'",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Mukhtashar Abi Syuja'."},
- {n:"16",title:"Alfiyah Ibnu Malik",cat:"nahwu",icon:"كتاب",badge:"KITAB",url:"https://leezeei.github.io/alfiah/",desc:"Modul kitab klasik: Alfiyah Ibnu Malik."},
- {n:"17",title:"Al-'Imrithi",cat:"nahwu",icon:"كتاب",badge:"KITAB",url:"https://leezeei.github.io/imrithi/",desc:"Modul kitab klasik: Al-'Imrithi."},
- {n:"18",title:"Al-Ajurumiyah",cat:"nahwu",icon:"كتاب",badge:"KITAB",url:"https://leezeei.github.io/ajurumiyah/",desc:"Modul kitab klasik: Al-Ajurumiyah."},
- {n:"19",title:"Ilmu Shorof",cat:"sharaf",icon:"كتاب",badge:"KITAB",url:"https://leezeei.github.io/shorof/",desc:"Modul kitab klasik: Ilmu Shorof."},
- {n:"20",title:"Nazham Al-Maqshūd",cat:"sharaf",icon:"كتاب",badge:"KITAB",url:"https://leezeei.github.io/maqsud/",desc:"Modul kitab klasik: Nazham Al-Maqshūd."},
- {n:"21",title:"Ilmu Falak Lanjutan",cat:"lain",icon:"كتاب",badge:"KITAB",url:"https://leezeei.github.io/falak1/",desc:"Modul kitab klasik: Ilmu Falak Lanjutan."},
- {n:"22",title:"Pelajaran Farā'iḍ",cat:"lain",icon:"كتاب",badge:"KITAB",url:"https://leezeei.github.io/faroid/",desc:"Modul kitab klasik: Pelajaran Farā'iḍ."},
- {n:"23",title:"Hisab Falakiyah",cat:"lain",icon:"كتاب",badge:"KITAB",url:"https://leezeei.github.io/falak/",desc:"Modul kitab klasik: Hisab Falakiyah."},
- {n:"24",title:"Kalkulator Ahli Waris",cat:"lain",icon:"كتاب",badge:"KITAB",url:"https://leezeei.github.io/waris/",desc:"Modul kitab klasik: Kalkulator Ahli Waris."},
+ {n:"16",title:"Alfiyah Ibnu Malik",cat:"nahwu",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Alfiyah Ibnu Malik."},
+ {n:"17",title:"Al-'Imrithi",cat:"nahwu",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Al-'Imrithi."},
+ {n:"18",title:"Al-Ajurumiyah",cat:"nahwu",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Al-Ajurumiyah."},
+ {n:"19",title:"Ilmu Shorof",cat:"sharaf",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Ilmu Shorof."},
+ {n:"20",title:"Nazham Al-Maqshūd",cat:"sharaf",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Nazham Al-Maqshūd."},
+ {n:"21",title:"Ilmu Falak Lanjutan",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Ilmu Falak Lanjutan."},
+ {n:"22",title:"Pelajaran Farā'iḍ",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Pelajaran Farā'iḍ."},
+ {n:"23",title:"Hisab Falakiyah",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Hisab Falakiyah."},
+ {n:"24",title:"Kalkulator Ahli Waris",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Kalkulator Ahli Waris."},
+ {n:"25",title:"Fathul Qorib al-Mujib",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Fathul Qorib al-Mujib."},
+ {n:"26",title:"Hayatul Hayawan",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Hayatul Hayawan."},
+ {n:"27",title:"Tahqiqul Hayawan",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Tahqiqul Hayawan."},
+ {n:"28",title:"Maulid Ad-Diba'i",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Maulid Ad-Diba'i."},
+ {n:"29",title:"Maulid Al-Barzanji",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Maulid Al-Barzanji."},
+ {n:"30",title:"Simṭud Durar",cat:"lain",icon:"كتاب",badge:"KITAB",url:"",desc:"Modul kitab klasik: Simṭud Durar."},
 ];
 const umum=[
  {n:"01",title:"POLIBUN",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: POLIBUN."},
@@ -758,12 +772,12 @@ const umum=[
  {n:"10",title:"BPJS TK",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: BPJS TK."},
  {n:"11",title:"BPJSKES",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: BPJSKES."},
  {n:"12",title:"RTH",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: RTH."},
- {n:"13",title:"Kalkulator Pajak Indonesia",cat:"lain",icon:"✦",badge:"UMUM",url:"https://leezeei.github.io/pajak/",desc:"Aplikasi dan utilitas: Kalkulator Pajak Indonesia."},
+ {n:"13",title:"Kalkulator Pajak Indonesia",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: Kalkulator Pajak Indonesia."},
  {n:"14",title:"Jadwal Sholat",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: Jadwal Sholat."},
- {n:"15",title:"Peta Potensi Air Tanah",cat:"lain",icon:"✦",badge:"UMUM",url:"https://leezeei.github.io/air/",desc:"Aplikasi dan utilitas: Peta Potensi Air Tanah."},
- {n:"16",title:"Nadaflow",cat:"lain",icon:"✦",badge:"UMUM",url:"https://leezeei.github.io/musik/",desc:"Aplikasi dan utilitas: Nadaflow."},
- {n:"17",title:"VAOZEE IO",cat:"lain",icon:"✦",badge:"UMUM",url:"https://leezeei.github.io/io/",desc:"Aplikasi dan utilitas: VAOZEE IO."},
- {n:"18",title:"Suite Launcher",cat:"lain",icon:"✦",badge:"UMUM",url:"https://leezeei.github.io/promo/",desc:"Aplikasi dan utilitas: Suite Launcher."},
+ {n:"15",title:"Peta Potensi Air Tanah",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: Peta Potensi Air Tanah."},
+ {n:"16",title:"Nadaflow",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: Nadaflow."},
+ {n:"17",title:"VAOZEE IO",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: VAOZEE IO."},
+ {n:"18",title:"Suite Launcher",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: Suite Launcher."}, {n:"19",title:"Gold Prospectivity Engine",cat:"lain",icon:"✦",badge:"UMUM",url:"",desc:"Aplikasi dan utilitas: Gold Prospectivity Engine."},
 ];
 function escAttr(v){
  return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1207,13 +1221,9 @@ if('IntersectionObserver' in window){
   overlay.addEventListener('pointercancel',endPtr);
   overlay.addEventListener('dblclick',()=>{ window.vaozeeResetZoomMode(); });
 })();
-/* === Sinkronisasi Modul otomatis dari Google Sheet (Apps Script) + Manager === */
+/* === Manajemen Modul (lokal, tanpa Google Sheet/Apps Script) === */
 (function(){
-  /* Ganti URL ini jika suatu saat Anda membuat deployment Apps Script baru dengan URL berbeda. */
-  const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbyh0yU30E9nM-h0QQ3R2ty_lHq7dit6ONWUeI7RNSJJ2FywGkooWr17ZbeJvltYYiD5/exec';
-  const SYNC_INTERVAL_MS=45000; /* cek pembaruan Google Sheet tiap 45 detik */
-  const STORAGE_KEY='vaozee_kitab_modules_v1';           /* fallback lokal jika koneksi gagal */
-  const REMOTE_CACHE_KEY='vaozee_remote_modules_cache_v1'; /* cache modul dari Sheet, untuk tampilan instan */
+  const STORAGE_KEY='vaozee_kitab_modules_v1'; /* modul tambahan tersimpan di browser ini (localStorage) */
 
   /* Password disimpan dalam format tersandi (dibalik lalu Base64), BUKAN teks polos,
      supaya tidak langsung kelihatan/terlacak lewat "view source" atau pencarian teks biasa.
@@ -1234,8 +1244,6 @@ if('IntersectionObserver' in window){
 
   function readLocal(){try{const x=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return []}}
   function writeLocal(x){localStorage.setItem(STORAGE_KEY,JSON.stringify(x))}
-  function readRemoteCache(){try{const x=JSON.parse(localStorage.getItem(REMOTE_CACHE_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return []}}
-  function writeRemoteCache(x){localStorage.setItem(REMOTE_CACHE_KEY,JSON.stringify(x))}
   function validUrl(url){try{const u=new URL(url);return /^https?:$/.test(u.protocol)?u.href:''}catch(e){return ''}}
 
   /*
@@ -1293,7 +1301,7 @@ if('IntersectionObserver' in window){
     "Suite Launcher":"suite-launcher.html"
   };
 
-  let remoteItems=readRemoteCache();
+  let remoteItems=[]; /* Sinkronisasi Google Sheet dihapus -- dashboard ini murni lokal/statis */
 
   function normalizeTitle(v){
     return String(v||'')
@@ -1343,7 +1351,7 @@ if('IntersectionObserver' in window){
 
   /*
    * Prioritas sumber:
-   * 1. Link Google Sheet/online jika nama kitab sama.
+   * 1. Link online (field url) jika diisi pada array kitab/umum.
    * 2. File lokal jika link online tidak tersedia/tidak dapat dipakai.
    *
    * Dengan cara ini file offline hanya menjadi fallback, bukan sumber utama.
@@ -1422,24 +1430,13 @@ if('IntersectionObserver' in window){
     if(syncText)syncText.textContent=msg;
   }
 
-  async function syncFromSheet(silent){
-    setSyncState('ok','Menyinkronkan…');
-    try{
-      const res=await fetch(APPS_SCRIPT_URL+'?action=list',{method:'GET'});
-      const data=await res.json();
-      if(data&&data.ok&&Array.isArray(data.items)){
-        remoteItems=data.items.map(x=>({...x,n:String(x.n)}));
-        writeRemoteCache(remoteItems);
-        renderAll();
-        const now=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-        setSyncState('ok','Tersinkron pukul '+now);
-      }else{
-        setSyncState('err','Gagal membaca data Sheet');
-      }
-    }catch(err){
-      setSyncState('err','Offline / gagal sinkron');
-      if(!silent)console.warn('Sinkronisasi modul gagal:',err);
-    }
+  /* Sinkronisasi ke Google Sheet/Apps Script sudah dihapus sepenuhnya.
+     Dashboard ini murni statis: semua modul berasal dari array kitab/umum
+     di atas (mengarah langsung ke file HTML lokal), ditambah modul yang
+     Anda simpan sendiri lewat "Tambah Modul" (tersimpan di localStorage
+     browser ini saja, tidak dikirim ke server manapun). */
+  function syncFromSheet(){
+    setSyncState('ok','Daftar modul lokal');
   }
 
   function fillForm(x){
@@ -1467,17 +1464,17 @@ if('IntersectionObserver' in window){
   function exitEditMode(){
     editTargetInput.value='';
     if(managerTitle)managerTitle.textContent='Tambah Modul';
-    if(managerDesc)managerDesc.textContent='Tambahkan link modul; setelah disimpan ke Google Sheet, kotaknya otomatis muncul di halaman utama semua pengunjung.';
+    if(managerDesc)managerDesc.textContent='Tambahkan link modul; modul tersimpan lokal di browser ini saja (localStorage).';
     if(submitBtn)submitBtn.textContent='Simpan Modul';
   }
 
   function listSaved(){
     const localItems=readLocal();
     const remoteEditable=remoteItems.filter(x=>!isBuiltin(x));
-    const remoteRows=remoteEditable.map(x=>`<div class="module-saved-item"><span><b>${x.title}</b><small>${x.url} · dari Google Sheet</small></span><span style="display:flex;gap:6px"><button class="module-edit" type="button" data-n="${x.n}" data-remote="1">Edit</button><button class="module-delete" type="button" data-n="${x.n}" data-remote="1">Hapus</button></span></div>`).join('');
+    const remoteRows=''; /* tidak ada lagi sumber remote (Google Sheet) */
     const localRows=localItems.map(x=>`<div class="module-saved-item"><span><b>${x.title}</b><small>${x.localUrl||localUrlFor(x)} · tersimpan lokal</small></span><span style="display:flex;gap:6px"><button class="module-edit" type="button" data-n="${x.n}">Edit</button><button class="module-delete" type="button" data-n="${x.n}">Hapus</button></span></div>`).join('');
     const builtinCount=remoteItems.filter(isBuiltin).length;
-    const builtinNote=builtinCount?`<div class="module-manager-note">+ ${builtinCount} modul bawaan tercatat di Google Sheet untuk monitoring (tidak bisa diedit dari sini, karena sumbernya file HTML).</div>`:'';
+    const builtinNote='';
     savedList.innerHTML='<h4>Modul tambahan tersimpan</h4>'+((remoteRows+localRows)||'<div class="module-manager-note">Belum ada modul tambahan.</div>')+builtinNote;
 
     savedList.querySelectorAll('.module-edit').forEach(b=>{
@@ -1492,15 +1489,8 @@ if('IntersectionObserver' in window){
       b.onclick=async()=>{
         const p=prompt('Masukkan password untuk menghapus modul:');
         if(p!==getPassword()){if(p!==null)alert('Password salah.');return}
-        if(b.dataset.remote){
-          try{
-            await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'delete',token:getPassword(),n:b.dataset.n})});
-          }catch(e){alert('Gagal menghapus dari Google Sheet. Periksa koneksi lalu coba lagi.');return}
-          await syncFromSheet(true);
-        }else{
-          writeLocal(readLocal().filter(x=>String(x.n)!==b.dataset.n));
-          renderAll();
-        }
+        writeLocal(readLocal().filter(x=>String(x.n)!==b.dataset.n));
+        renderAll();
         listSaved();
       };
     });
@@ -1547,21 +1537,11 @@ if('IntersectionObserver' in window){
         writeLocal(items);renderAll();
         alert('Perubahan modul lokal berhasil disimpan.');
       }else{
-        const res=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-        const data=await res.json();
-        if(!data.ok)throw new Error(data.error||'Gagal menyimpan ke Google Sheet.');
-        await syncFromSheet(true);
-        alert(isEdit?'Perubahan modul berhasil disimpan ke Google Sheet.':'Modul berhasil disimpan ke Google Sheet dan tampil otomatis di halaman utama.');
-      }
-    }catch(err){
-      if(isEdit){
-        alert('Gagal menyimpan perubahan ke Google Sheet.\n('+err.message+')\nCoba lagi setelah koneksi normal.');
-      }else{
         const items=readLocal();
         const localN='L'+Date.now();
         items.push({n:localN,title,cat:payload.cat,icon:payload.icon,badge:payload.badge,url,localUrl:payload.localUrl,desc:payload.desc,section});
         writeLocal(items);renderAll();
-        alert('Tidak bisa terhubung ke Google Sheet, modul disimpan sementara hanya di browser ini.\n('+err.message+')');
+        alert('Modul berhasil disimpan (tersimpan lokal di browser ini) dan langsung tampil di halaman utama.');
       }
     }finally{
       submitBtn.disabled=false;submitBtn.textContent=isEdit?'Simpan Perubahan':'Simpan Modul';
@@ -1571,9 +1551,7 @@ if('IntersectionObserver' in window){
   });
 
   renderAll();
-  syncFromSheet(true);
-  setInterval(()=>syncFromSheet(true),SYNC_INTERVAL_MS);
-  window.vaozeeSyncModules=()=>syncFromSheet(false); /* bisa dipanggil manual dari console jika perlu */
+  syncFromSheet();
 })();
 
 /* === Tombol Ringkas Tampilan (compact view) === */
